@@ -8,8 +8,11 @@ from dataclasses import InitVar
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+from time import sleep
+# **********************************************
+# waiting tasks
+# **********************************************
 
-#waiting tasks
 #0 this code file is to create a databse for stocks to be studied 
     #next file will update databse
     #next file will analyse databse and proffer recommendations
@@ -25,6 +28,11 @@ from urllib3.util.retry import Retry
     #|all crypto exchanges|all crypto pairs|requested required info 
 #7 confirm if json files produced overwrite or just appends
 #Now pls check whats in the dataclass df's to confirm data is in it
+
+# **********************************************
+# done tasks
+# **********************************************
+
 
 # data class to hold each ticker data
 @dataclass
@@ -298,3 +306,4 @@ interval = "1min"
 start_date = "2016-01-20"
 for ticker in tickers:
     getdata_12data(twelvedata_api_key, ticker, interval, start_date)
+    sleep(10)
