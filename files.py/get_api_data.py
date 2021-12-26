@@ -26,8 +26,8 @@ from time import sleep
 #5 get earliest dates a ticker was registered on exchanges: https://twelvedata.com/docs#earliest-timestamp
 #6 confirm with flo if 12data covers satisfactorily all exchanges|all tickers
     #|all crypto exchanges|all crypto pairs|requested required info 
-#7 confirm if json files produced overwrite or just appends
-#Now pls check whats in the dataclass df's to confirm data is in it
+
+
 
 # **********************************************
 # inview tasks
@@ -37,6 +37,10 @@ from time import sleep
 # **********************************************
 # done tasks
 # **********************************************
+#Now pls check whats in the dataclass df's to confirm data is in it
+#7 confirm if json files produced overwrite or just appends
+
+
 
 
 # data class to hold each ticker data
@@ -67,6 +71,8 @@ class singleTickerInput(object):
     #alpha_vantage_api_key : str = "FYQD4Z70A1KX5QI9"
     twelvedata_api_key: str = "7940a5c7698545e98f6617f235dd1d5d"
     ticker: str = "AAPL"
+    earliestdatetime: str
+    earliestUnix_time: str
     interval: str = "1min"
     start_date: str = "2016-01-20"
     end_date: str = ""
@@ -86,7 +92,23 @@ def createfolder(nwFolder):
         #f.write(data)
     return p
 
+# def function to get earliest timestamp for each stock
+def getTickerEarliesrTimeStamp(twelvedata_api_key, ticker, interval):
+    data_types = ["earliest_timestamp"]
+    twelvedata_url = f'https://api.twelvedata.com/{data_types}?symbol={ticker}&interval={interval}&apikey={twelvedata_api_key}'
+    #json_object = requests.get(twelvedata_url).json()
+    
+    session = requests.Session()
+    # In case I run into issues, retry my connection
+    retries = Retry(total=5, backoff_factor=0.1, status_forcelist=[ 500, 502, 503, 504 ])
+    session.mount('http://', HTTPAdapter(max_retries=retries))
+    # Initial request to get the ticker count
+    r = session.get(twelvedata_url)
+    json_object = r.json()
 
+    datetime_data = json_object['datetime']
+    unix_time_data = json_object['unix_time']
+    
 
 def getdata_12data(twelvedata_api_key, ticker, interval, start_date): #do i need to add timezone?
     # TwelveData Work
@@ -95,9 +117,9 @@ def getdata_12data(twelvedata_api_key, ticker, interval, start_date): #do i need
     value_type = ["values", "dividends", "splits"]
     #value_type = ["splits"]
 
-    # create json.files folder if not exist
-    p = str(createfolder('files.json'))
-    print(f'json files will be stored in {p} folder')
+    ## create json.files folder if not exist
+    #p = str(createfolder('files.json'))
+    #print(f'json files will be stored in {p} folder')
 
     counter = 0
     # initialise empty dataframes
@@ -311,21 +333,21 @@ def main_run():
         aa = tick.ticker
         print(aa)
 
-#if __name__ == "__main__":
-    #print ("Executing main Program Now")
-    #main_run()
-#else:
-    #print ("Executed when imported")
+if __name__ == "__main__":
+    print ("Executing main Program Now")
+    main_run()
+else:
+    print ("Executed when imported")
 
-
-twelvedata_api_key = "7940a5c7698545e98f6617f235dd1d5d"
-tickers = ["AAPL", "brtx"]
-interval = "1min"
-start_date = "2016-01-20"
-TickDClst = []
-for ticker in tickers:
-    singleTickDC = getdata_12data(twelvedata_api_key, ticker, interval, start_date)
-    TickDClst.append(singleTickDC)
-    sleep(10)
-
-AllTickDC = multiTickerData(TickDClst)
+# code for quick test
+#twelvedata_api_key = "7940a5c7698545e98f6617f235dd1d5d"
+#tickers = ["AAPL", "brtx"]
+#interval = "1min"
+#start_date = "2016-01-20"
+#TickDClst = []
+#for ticker in tickers:
+#    singleTickDC = getdata_12data(twelvedata_api_key, ticker, interval, start_date)
+#    TickDClst.append(singleTickDC)
+#    sleep(10)
+#
+#AllTickDC = multiTickerData(TickDClst)
