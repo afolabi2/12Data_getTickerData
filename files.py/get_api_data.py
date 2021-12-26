@@ -23,7 +23,7 @@ from time import sleep
 #3 Filter out preferred stock, american depositry receipts, closed end funds, reit
     #stockTypes = ['PFD','ADR','CEF','MLP','REIT','RIGHT','UNIT','WRT']
 #4 confirm timezone to use
-#5 get earliest dates a ticker was registered on exchanges: https://twelvedata.com/docs#earliest-timestamp
+
 #6 confirm with flo if 12data covers satisfactorily all exchanges|all tickers
     #|all crypto exchanges|all crypto pairs|requested required info 
 
@@ -39,25 +39,25 @@ from time import sleep
 # **********************************************
 #Now pls check whats in the dataclass df's to confirm data is in it
 #7 confirm if json files produced overwrite or just appends
-
+#5 get earliest dates a ticker was registered on exchanges: https://twelvedata.com/docs#earliest-timestamp
 
 
 
 # data class to hold each ticker data
 @dataclass
 class singleTickerData(object):
-     ticker: str
-     df_tsMeta : pd.core.frame.DataFrame
-     df_tsData : pd.core.frame.DataFrame
-     df_tsError : pd.core.frame.DataFrame
-
-     df_dvMeta : pd.core.frame.DataFrame
-     df_dvData : pd.core.frame.DataFrame
-     df_dvError : pd.core.frame.DataFrame
-
-     df_spMeta : pd.core.frame.DataFrame
-     df_spData : pd.core.frame.DataFrame
-     df_spError : pd.core.frame.DataFrame
+    ticker: str
+    earliestdatetime: str
+    earliestUnix_time: str
+    df_tsMeta : pd.core.frame.DataFrame
+    df_tsData : pd.core.frame.DataFrame
+    df_tsError : pd.core.frame.DataFrame
+    df_dvMeta : pd.core.frame.DataFrame
+    df_dvData : pd.core.frame.DataFrame
+    df_dvError : pd.core.frame.DataFrame
+    df_spMeta : pd.core.frame.DataFrame
+    df_spData : pd.core.frame.DataFrame
+    df_spError : pd.core.frame.DataFrame
 
 @dataclass
 class multiTickerData(object):
@@ -71,8 +71,7 @@ class singleTickerInput(object):
     #alpha_vantage_api_key : str = "FYQD4Z70A1KX5QI9"
     twelvedata_api_key: str = "7940a5c7698545e98f6617f235dd1d5d"
     ticker: str = "AAPL"
-    earliestdatetime: str
-    earliestUnix_time: str
+
     interval: str = "1min"
     start_date: str = "2016-01-20"
     end_date: str = ""
@@ -95,20 +94,25 @@ def createfolder(nwFolder):
 # def function to get earliest timestamp for each stock
 def getTickerEarliesrTimeStamp(twelvedata_api_key, ticker, interval):
     data_types = ["earliest_timestamp"]
-    twelvedata_url = f'https://api.twelvedata.com/{data_types}?symbol={ticker}&interval={interval}&apikey={twelvedata_api_key}'
-    #json_object = requests.get(twelvedata_url).json()
+    #twelvedata_url = f'https://api.twelvedata.com/{data_types}?symbol={ticker}&interval=1day&apikey={twelvedata_api_key}'
+    twelvedata_url =  f'https://api.twelvedata.com/earliest_timestamp?symbol={ticker}&interval=1day&apikey={twelvedata_api_key}'
+    json_object = requests.get(twelvedata_url).json()
     
-    session = requests.Session()
-    # In case I run into issues, retry my connection
-    retries = Retry(total=5, backoff_factor=0.1, status_forcelist=[ 500, 502, 503, 504 ])
-    session.mount('http://', HTTPAdapter(max_retries=retries))
-    # Initial request to get the ticker count
-    r = session.get(twelvedata_url)
-    json_object = r.json()
+    #session = requests.Session()
+    ## In case I run into issues, retry my connection
+    #retries = Retry(total=5, backoff_factor=0.1, status_forcelist=[ 500, 502, 503, 504 ])
+    #session.mount('http://', HTTPAdapter(max_retries=retries))
+    ## Initial request to get the ticker count
+    #r = session.get(twelvedata_url)
+    #json_object = r.json()
 
     datetime_data = json_object['datetime']
     unix_time_data = json_object['unix_time']
-    
+    mydict = {}
+    mydict['datetime_data'] = datetime_data
+    mydict['unix_time_data'] = unix_time_data
+    return mydict
+
 
 def getdata_12data(twelvedata_api_key, ticker, interval, start_date): #do i need to add timezone?
     # TwelveData Work
@@ -176,9 +180,9 @@ def getdata_12data(twelvedata_api_key, ticker, interval, start_date): #do i need
                 # print(value_data)
                 #print(value_df.head(5))
 
-                mypath = pathlib.Path(f'{p}', f'{ticker}_{data_type}.json')
-                with open(mypath, "w") as outfile:
-                    json.dump(json_object, outfile)
+                #mypath = pathlib.Path(f'{p}', f'{ticker}_{data_type}.json')
+                #with open(mypath, "w") as outfile:
+                #    json.dump(json_object, outfile)
                 
                 if data_type == "time_series":
                     tsMeta_df = meta_df
@@ -215,9 +219,9 @@ def getdata_12data(twelvedata_api_key, ticker, interval, start_date): #do i need
                 elif data_type == "splits":
                     spError_df = error_df
 
-                mypath = pathlib.Path(f'{p}', f'{ticker}_{data_type}_error.json')
-                with open(mypath, "w") as outfile:
-                    json.dump(json_object, outfile)
+                #mypath = pathlib.Path(f'{p}', f'{ticker}_{data_type}_error.json')
+                #with open(mypath, "w") as outfile:
+                #    json.dump(json_object, outfile)
 
         elif (status_exist == False):
             #print("")
@@ -241,9 +245,9 @@ def getdata_12data(twelvedata_api_key, ticker, interval, start_date): #do i need
             # print(value_data)
             #print(value_df.head(5))
 
-            mypath = pathlib.Path(f'{p}', f'{ticker}_{data_type}.json')
-            with open(mypath, "w") as outfile:
-                json.dump(json_object, outfile)
+            #mypath = pathlib.Path(f'{p}', f'{ticker}_{data_type}.json')
+            #with open(mypath, "w") as outfile:
+            #    json.dump(json_object, outfile)
 
             if data_type == "time_series":
                 tsMeta_df = meta_df
@@ -257,10 +261,14 @@ def getdata_12data(twelvedata_api_key, ticker, interval, start_date): #do i need
                 spMeta_df = meta_df
                 spData_df = value_df 
                 
-
- 
+        earliestTimeStampDct = getTickerEarliesrTimeStamp(twelvedata_api_key, ticker, interval)
+        earliestdatetime  = earliestTimeStampDct['datetime_data']
+        earliestUnix_time = earliestTimeStampDct['unix_time_data']
+        
         counter += 1
         ticker_dc = singleTickerData(ticker=ticker, 
+                                    earliestdatetime=earliestdatetime,
+                                    earliestUnix_time=earliestUnix_time,
                                     df_tsMeta=tsMeta_df, 
                                     df_tsData=tsData_df,
                                     df_tsError=tsError_df, 
@@ -274,6 +282,8 @@ def getdata_12data(twelvedata_api_key, ticker, interval, start_date): #do i need
     # check ticker_dc contents
     print("=" * 80)
     print(f'ticker check for {ticker_dc.ticker}')
+    print(f'Earliest Date-time for {ticker_dc.ticker} is {ticker_dc.earliestdatetime}')
+    print(f'Earliest Unix-time for {ticker_dc.ticker} is {ticker_dc.earliestUnix_time}')
     print(f'column qty of df_tsMeta is {len(ticker_dc.df_tsMeta.columns)}') 
     print(f'column qty of df_tsData is {len(ticker_dc.df_tsData.columns)}') 
     print(f'column qty of df_tsError is {len(ticker_dc.df_tsError.columns)}') 
@@ -333,21 +343,21 @@ def main_run():
         aa = tick.ticker
         print(aa)
 
-if __name__ == "__main__":
-    print ("Executing main Program Now")
-    main_run()
-else:
-    print ("Executed when imported")
+#if __name__ == "__main__":
+#    print ("Executing main Program Now")
+#    main_run()
+#else:
+#    print ("Executed when imported")
 
 # code for quick test
-#twelvedata_api_key = "7940a5c7698545e98f6617f235dd1d5d"
-#tickers = ["AAPL", "brtx"]
-#interval = "1min"
-#start_date = "2016-01-20"
-#TickDClst = []
-#for ticker in tickers:
-#    singleTickDC = getdata_12data(twelvedata_api_key, ticker, interval, start_date)
-#    TickDClst.append(singleTickDC)
-#    sleep(10)
-#
-#AllTickDC = multiTickerData(TickDClst)
+twelvedata_api_key = "7940a5c7698545e98f6617f235dd1d5d"
+tickers = ["AAPL", "brtx"]
+interval = "1min"
+start_date = "2016-01-20"
+TickDClst = []
+for ticker in tickers:
+    singleTickDC = getdata_12data(twelvedata_api_key, ticker, interval, start_date)
+    TickDClst.append(singleTickDC)
+    sleep(10)
+
+AllTickDC = multiTickerData(TickDClst)
