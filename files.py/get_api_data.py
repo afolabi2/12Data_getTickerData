@@ -30,6 +30,11 @@ from time import sleep
 #Now pls check whats in the dataclass df's to confirm data is in it
 
 # **********************************************
+# inview tasks
+# **********************************************
+
+
+# **********************************************
 # done tasks
 # **********************************************
 
@@ -244,6 +249,19 @@ def getdata_12data(twelvedata_api_key, ticker, interval, start_date): #do i need
                                     df_spData=spData_df,
                                     df_spError=spError_df
                                                 ) 
+    # check ticker_dc contents
+    print("=" * 80)
+    print(f'ticker check for {ticker_dc.ticker}')
+    print(f'column qty of df_tsMeta is {len(ticker_dc.df_tsMeta.columns)}') 
+    print(f'column qty of df_tsData is {len(ticker_dc.df_tsData.columns)}') 
+    print(f'column qty of df_tsError is {len(ticker_dc.df_tsError.columns)}') 
+    print(f'column qty of df_dvMeta is {len(ticker_dc.df_dvMeta.columns)}') 
+    print(f'column qty of df_dvData is {len(ticker_dc.df_dvData.columns)}') 
+    print(f'column qty of df_dvError is {len(ticker_dc.df_dvError.columns)}') 
+    print(f'column qty of df_spMeta is {len(ticker_dc.df_spMeta.columns)}') 
+    print(f'column qty of df_spData is {len(ticker_dc.df_spData.columns)}')   
+    print(f'column qty of df_spError is {len(ticker_dc.df_spError.columns)}')    
+    print("=" * 80)                                   
     return ticker_dc
 
 def returnTickerLst():
@@ -304,6 +322,10 @@ twelvedata_api_key = "7940a5c7698545e98f6617f235dd1d5d"
 tickers = ["AAPL", "brtx"]
 interval = "1min"
 start_date = "2016-01-20"
+TickDClst = []
 for ticker in tickers:
-    getdata_12data(twelvedata_api_key, ticker, interval, start_date)
+    singleTickDC = getdata_12data(twelvedata_api_key, ticker, interval, start_date)
+    TickDClst.append(singleTickDC)
     sleep(10)
+
+AllTickDC = multiTickerData(TickDClst)
