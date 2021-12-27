@@ -86,15 +86,17 @@ class singleTickerInput(object):
     timezone: str = ""   
 
 
-def getTimeUnits(interval): #get the value of time for each interval
-    interval_lst                = ['1min', '5min', '15min', '30min', '45min', '1h', '2h', '4h', '1day', '1week', '1month']
-    interval_Qty_lst     = [44640 ,  8928 ,  2976  ,  1488  ,  992   ,  744,  372, 186 ,  31   ,   4.43 ,  1]
-    interval_dict = {interval_lst[i]: interval_Qty_lst[i] for i in range(len(interval_lst))}
+def getTimeUnits(interval, timedeltaInMinutes): #get the value of time for each interval
+    interval_lst         = ['1min', '5min', '15min', '30min', '45min', '1h', '2h', '4h', '1day', '1week', '1month']
+    interval_Qty_lst     = [1     ,  5    ,  15    ,  30    ,  45    ,  60 ,  120, 240 ,  1440 ,  10080 ,  44640]
+    totaloutputsze_lst   = [((timedeltaInMinutes ) / x) for x in interval_Qty_lst]
+    
+    interval_dict = {interval_lst[i]: totaloutputsze_lst[i] for i in range(len(interval_lst))}
     total_outputsze = interval_dict[f'{interval}']
     max_outputsze   = 5000
-    loop = total_outputsze / max_outputsze
-
-    print(outputsze)
+    loop = math.ceil(total_outputsze / max_outputsze)
+    remnant = total_outputsze - (max_outputsze * loop)
+    print(f'loop: {loop}| remnant: {remnant}')
 
 
 #function to get date ranges
@@ -106,11 +108,10 @@ def getDateRange(twelvedata_api_key, ticker, interval):
     end_date_str   = datetime.today().strftime('%Y-%m-%d')
     end_date = datetime.strptime(f'{end_date_str}', '%Y-%m-%d')
     duration = end_date - start_date
-    print(type(start_date), start_date)
-    print(type(end_date), end_date)
-    print(type(duration), duration)
+    diff_in_minutes = duration.total_seconds() / 60
+    diff_in_minutes = round(diff_in_minutes)
 
-    loops_float = duration
+    return diff_in_minutes
 
     ## Let's fill this in with a month-by-month dateranges to feed to the API
     ## This is broken up just so we don't fill up the 5000 outputsize maximum APIlimit.
@@ -419,8 +420,8 @@ def tester():
         start_date = "2016-01-20"
         end_date = ""
         timezone = ""
-        getDateRange(twelvedata_api_key, ticker, interval)
-        getTimeUnits(interval)
+        DurationDays = getDateRange(twelvedata_api_key, ticker, interval)
+        getTimeUnits(interval, DurationDays)
 
 # logic runner
 if __name__ == "__main__":
