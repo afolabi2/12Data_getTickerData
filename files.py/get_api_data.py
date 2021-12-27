@@ -9,8 +9,11 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 import calendar
+from datetime import datetime
+from datetime import date
 import time
 from time import sleep
+import math
 # **********************************************
 # waiting tasks
 # **********************************************
@@ -82,22 +85,48 @@ class singleTickerInput(object):
     earliestUnixTime_data: str = ""
     timezone: str = ""   
 
+
+def getTimeUnits(interval): #get the value of time for each interval
+    interval_lst                = ['1min', '5min', '15min', '30min', '45min', '1h', '2h', '4h', '1day', '1week', '1month']
+    interval_Qty_lst     = [44640 ,  8928 ,  2976  ,  1488  ,  992   ,  744,  372, 186 ,  31   ,   4.43 ,  1]
+    interval_dict = {interval_lst[i]: interval_Qty_lst[i] for i in range(len(interval_lst))}
+    total_outputsze = interval_dict[f'{interval}']
+    max_outputsze   = 5000
+    loop = total_outputsze / max_outputsze
+
+    print(outputsze)
+
+
 #function to get date ranges
-def getDateRange():
-    # Let's fill this in with a month-by-month dateranges to feed to the API
-    # This is broken up just so we don't fill up the 5000 outputsize maximum APIlimit.
-    date_ranges = []
- 
-    # 12 entries starting from 1 for the month
-    # calendar.monthrange gives us (start-date, end-date) for the month in question
-    for month in range(1, 13):
-        daterange = calendar.monthrange(year, month)
-        date_ranges.append((f'{year}-{month}-01', f'{year}-{month}-{daterange[1]}'))
- 
-    # Because the output is ordered descending in date, let's reverse this list so we get december first.
-    date_ranges.reverse()
-    for dates in date_ranges:
-        print(dates)
+def getDateRange(twelvedata_api_key, ticker, interval):
+    time_dict = getTickerEarliesrTimeStamp(twelvedata_api_key, ticker, interval)
+    start_date_str = time_dict['datetime_data'] 
+    start_date = datetime.strptime(f'{start_date_str}', '%Y-%m-%d')
+        
+    end_date_str   = datetime.today().strftime('%Y-%m-%d')
+    end_date = datetime.strptime(f'{end_date_str}', '%Y-%m-%d')
+    duration = end_date - start_date
+    print(type(start_date), start_date)
+    print(type(end_date), end_date)
+    print(type(duration), duration)
+
+    loops_float = duration
+
+    ## Let's fill this in with a month-by-month dateranges to feed to the API
+    ## This is broken up just so we don't fill up the 5000 outputsize maximum APIlimit.
+    #year = 2020
+    #date_ranges = []
+ #
+    ## 12 entries starting from 1 for the month
+    ## calendar.monthrange gives us (start-date, end-date) for the month in question
+    #for month in range(1, 13):
+    #    daterange = calendar.monthrange(year, month)
+    #    date_ranges.append((f'{year}-{month}-01', f'{year}-{month}-{daterange[1]}'))
+ #
+    ## Because the output is ordered descending in date, let's reverse this list so we get december first.
+    #date_ranges.reverse()
+    #for dates in date_ranges:
+    #    print(dates)
 
 
 
@@ -381,10 +410,23 @@ def main_run():
 
     multi_ticker_dc = multiTickerData(listTickerDClass = multiTickerDCLst)
 
+def tester():
+         # api keys
+        #alpha_vantage_api_key = "FYQD4Z70A1KX5QI9"
+        twelvedata_api_key = "7940a5c7698545e98f6617f235dd1d5d"
+        ticker: str = "gree"
+        interval = "1min"
+        start_date = "2016-01-20"
+        end_date = ""
+        timezone = ""
+        getDateRange(twelvedata_api_key, ticker, interval)
+        getTimeUnits(interval)
+
 # logic runner
 if __name__ == "__main__":
     print ("Executing main Program Now")
     #main_run()
-    getDateRange()
+    tester()
+    
 else:
     print ("Executed when imported")
