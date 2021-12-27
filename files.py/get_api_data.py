@@ -85,7 +85,7 @@ class singleTickerInput(object):
     earliestUnixTime_data: str = ""
     timezone: str = ""   
 
-def getTimeUnits(interval, timedeltaInMinutes): #get the value of time for each interval
+def getTimeUnits(interval, start_date, end_date, timedeltaInMinutes): #get the value of time for each interval
     interval_lst         = ['1min', '5min', '15min', '30min', '45min', '1h', '2h', '4h', '1day', '1week', '1month']
     interval_Qty_lst     = [1     ,  5    ,  15    ,  30    ,  45    ,  60 ,  120, 240 ,  1440 ,  10080 ,  44640]
     totaloutputsze_lst   = [((timedeltaInMinutes ) / x) for x in interval_Qty_lst]
@@ -98,20 +98,60 @@ def getTimeUnits(interval, timedeltaInMinutes): #get the value of time for each 
     print(f'loop: {loop}| remnant: {remnant}')
     # list of date-deltas still needed
 
-#function to get date ranges
-def getDateRange(twelvedata_api_key, ticker, interval):
-    time_dict = getTickerEarliesrTimeStamp(twelvedata_api_key, ticker, interval)
-    start_date_str = time_dict['datetime_data'] 
-    start_date = datetime.strptime(f'{start_date_str}', '%Y-%m-%d')
-        
-    end_date_str   = datetime.today().strftime('%Y-%m-%d')
-    end_date = datetime.strptime(f'{end_date_str}', '%Y-%m-%d')
-    duration = end_date - start_date
-    diff_in_minutes = duration.total_seconds() / 60
-    diff_in_minutes = round(diff_in_minutes)
+def getTodaysDate():
+    today_str = datetime.today().strftime('%Y-%m-%d')
+    today = datetime.strptime(f'{end_date_str}', '%Y-%m-%d')
+    return today_str, today
+
+# function to get date ranges
+def getDateRange(twelvedata_api_key, ticker, interval,
+                timeRangeOption = 'EarliestTimeStamp_TodaysDate',
+                user_start_date_str = "", user_end_date_str = "",
+                timeRangeinMinutes = ''):
+    
+    # switches defined by streamlit app
+    #timeRangeOption = 'earliestTimeStamp_todaysDate'
+    #timeRangeOption = 'earliestTimeStamp_userEndDate'
+    #timeRangeOption = 'earliestTimeStamp_timeRange'
+    #timeRangeOption = 'userStartDate_todaysDate'
+    #timeRangeOption = 'userStartDate_timeRange'
+    #timeRangeOption = 'userEndDate_timeRange'
+    
+    if timeRangeOption == 'EarliestTimeStamp_TodaysDate':
+        time_dict = getTickerEarliesrTimeStamp(twelvedata_api_key, ticker, interval)
+        start_date_str = time_dict['datetime_data'] 
+        start_date = datetime.strptime(f'{start_date_str}', '%Y-%m-%d')
+        end_date_str, end_date = getTodaysDate()
+        duration = end_date - start_date
+        diff_in_minutes = duration.total_seconds() / 60
+        diff_in_minutes = math.floor(diff_in_minutes)
+    elif useEarliestTimeStamp == 'earliestTimeStamp_userEndDate':
+        time_dict = getTickerEarliesrTimeStamp(twelvedata_api_key, ticker, interval)
+        start_date_str = time_dict['datetime_data'] 
+        start_date = datetime.strptime(f'{start_date_str}', '%Y-%m-%d')
+        end_date_str  = user_end_date_str
+        end_date =  datetime.strptime(f'{end_date_str}', '%Y-%m-%d')
+        duration = end_date - start_date
+        diff_in_minutes = duration.total_seconds() / 60
+        diff_in_minutes = math.floor(diff_in_minutes)
+    elif useEarliestTimeStamp == 'earliestTimeStamp_timeRange':
+        time_dict = getTickerEarliesrTimeStamp(twelvedata_api_key, ticker, interval)
+        start_date_str = time_dict['datetime_data'] 
+        start_date = datetime.strptime(f'{start_date_str}', '%Y-%m-%d')
+        end_date_str  = user_end_date_str
+        end_date =  datetime.strptime(f'{end_date_str}', '%Y-%m-%d')
+        duration = end_date - start_date
+        diff_in_minutes = duration.total_seconds() / 60
+        diff_in_minutes = math.floor(diff_in_minutes)
+
+    getTimeUnits(interval, start_date, end_date, diff_in_minutes)
+
+
+
+
     return diff_in_minutes, start_date_dttime
 
-#function to create folder(nFolder, data):
+# function to create folder(nFolder, data):
 def createfolder(nwFolder):
     ii = pathlib.Path(__file__).parent.resolve().parents[0]
     #print(f'{str(ii)} is main directory')
@@ -398,8 +438,24 @@ def tester():
         start_date = "2016-01-20"
         end_date = ""
         timezone = ""
-        DurationMins, start_date_dttime = getDateRange(twelvedata_api_key, ticker, interval)
-        getTimeUnits(interval, DurationMins)
+        
+        # switches defined by streamlit app
+        #timeRangeOption = 'earliestTimeStamp_todaysDate'
+        #timeRangeOption = 'earliestTimeStamp_userEndDate'
+        #timeRangeOption = 'earliestTimeStamp_timeRange'
+        #timeRangeOption = 'userStartDate_todaysDate'
+        #timeRangeOption = 'userStartDate_timeRange'
+        #timeRangeOption = 'userEndDate_timeRange'
+
+        timeRangeOption = 'EarliestTimeStamp_TodaysDate' #assumed value of timeRangeOption
+        if timeRangeOption == 'EarliestTimeStamp_TodaysDate':
+            DurationMins, start_date_dttime = getDateRange(twelvedata_api_key, ticker, interval, 
+                                                        timeRangeOption = 'EarliestTimeStamp_TodaysDate')
+        elif timeRangeOption == 'earliestTimeStamp_userEndDate':
+            DurationMins, start_date_dttime = getDateRange(twelvedata_api_key, ticker, interval, 
+                                                        timeRangeOption = 'EarliestTimeStamp_TodaysDate')
+
+
 
 # logic runner
 if __name__ == "__main__":
