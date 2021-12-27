@@ -85,7 +85,6 @@ class singleTickerInput(object):
     earliestUnixTime_data: str = ""
     timezone: str = ""   
 
-
 def getTimeUnits(interval, timedeltaInMinutes): #get the value of time for each interval
     interval_lst         = ['1min', '5min', '15min', '30min', '45min', '1h', '2h', '4h', '1day', '1week', '1month']
     interval_Qty_lst     = [1     ,  5    ,  15    ,  30    ,  45    ,  60 ,  120, 240 ,  1440 ,  10080 ,  44640]
@@ -97,7 +96,7 @@ def getTimeUnits(interval, timedeltaInMinutes): #get the value of time for each 
     loop = math.ceil(total_outputsze / max_outputsze)
     remnant = total_outputsze - (max_outputsze * loop)
     print(f'loop: {loop}| remnant: {remnant}')
-
+    # list of date-deltas still needed
 
 #function to get date ranges
 def getDateRange(twelvedata_api_key, ticker, interval):
@@ -110,28 +109,7 @@ def getDateRange(twelvedata_api_key, ticker, interval):
     duration = end_date - start_date
     diff_in_minutes = duration.total_seconds() / 60
     diff_in_minutes = round(diff_in_minutes)
-
-    return diff_in_minutes
-
-    ## Let's fill this in with a month-by-month dateranges to feed to the API
-    ## This is broken up just so we don't fill up the 5000 outputsize maximum APIlimit.
-    #year = 2020
-    #date_ranges = []
- #
-    ## 12 entries starting from 1 for the month
-    ## calendar.monthrange gives us (start-date, end-date) for the month in question
-    #for month in range(1, 13):
-    #    daterange = calendar.monthrange(year, month)
-    #    date_ranges.append((f'{year}-{month}-01', f'{year}-{month}-{daterange[1]}'))
- #
-    ## Because the output is ordered descending in date, let's reverse this list so we get december first.
-    #date_ranges.reverse()
-    #for dates in date_ranges:
-    #    print(dates)
-
-
-
-
+    return diff_in_minutes, start_date_dttime
 
 #function to create folder(nFolder, data):
 def createfolder(nwFolder):
@@ -420,8 +398,8 @@ def tester():
         start_date = "2016-01-20"
         end_date = ""
         timezone = ""
-        DurationDays = getDateRange(twelvedata_api_key, ticker, interval)
-        getTimeUnits(interval, DurationDays)
+        DurationMins, start_date_dttime = getDateRange(twelvedata_api_key, ticker, interval)
+        getTimeUnits(interval, DurationMins)
 
 # logic runner
 if __name__ == "__main__":
