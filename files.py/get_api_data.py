@@ -8,6 +8,8 @@ from dataclasses import InitVar
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+import calendar
+import time
 from time import sleep
 # **********************************************
 # waiting tasks
@@ -23,7 +25,6 @@ from time import sleep
 #3 Filter out preferred stock, american depositry receipts, closed end funds, reit
     #stockTypes = ['PFD','ADR','CEF','MLP','REIT','RIGHT','UNIT','WRT']
 #4 confirm timezone to use
-
 #6 confirm with flo if 12data covers satisfactorily all exchanges|all tickers
     #|all crypto exchanges|all crypto pairs|requested required info 
 
@@ -32,14 +33,15 @@ from time import sleep
 # **********************************************
 # inview tasks
 # **********************************************
-
+# max nos of rows gettable is 5k per request> https://support.twelvedata.com/en/articles/5214728-getting-historical-data
+# use https://sahilramani.com/2021/01/series-how-to-analyze-stock-data-step-1-data-collection/
 
 # **********************************************
 # done tasks
 # **********************************************
 #Now pls check whats in the dataclass df's to confirm data is in it
-#7 confirm if json files produced overwrite or just appends
-#5 get earliest dates a ticker was registered on exchanges: https://twelvedata.com/docs#earliest-timestamp
+# confirm if json files produced overwrite or just appends
+# get earliest dates a ticker was registered on exchanges: https://twelvedata.com/docs#earliest-timestamp
 
 
 
@@ -47,6 +49,8 @@ from time import sleep
 @dataclass
 class singleTickerData(object):
     ticker: str
+    interval: str
+    start_date: str
     earliestdatetime: str
     earliestUnix_time: str
     df_tsMeta : pd.core.frame.DataFrame
@@ -71,13 +75,35 @@ class singleTickerInput(object):
     #alpha_vantage_api_key : str = "FYQD4Z70A1KX5QI9"
     twelvedata_api_key: str = "7940a5c7698545e98f6617f235dd1d5d"
     ticker: str = "AAPL"
-
     interval: str = "1min"
     start_date: str = "2016-01-20"
     end_date: str = ""
+    earliestDateTime_data: str = ""
+    earliestUnixTime_data: str = ""
     timezone: str = ""   
 
-#def createfolder(nFolder, data):
+#function to get date ranges
+def getDateRange():
+    # Let's fill this in with a month-by-month dateranges to feed to the API
+    # This is broken up just so we don't fill up the 5000 outputsize maximum APIlimit.
+    date_ranges = []
+ 
+    # 12 entries starting from 1 for the month
+    # calendar.monthrange gives us (start-date, end-date) for the month in question
+    for month in range(1, 13):
+        daterange = calendar.monthrange(year, month)
+        date_ranges.append((f'{year}-{month}-01', f'{year}-{month}-{daterange[1]}'))
+ 
+    # Because the output is ordered descending in date, let's reverse this list so we get december first.
+    date_ranges.reverse()
+    for dates in date_ranges:
+        print(dates)
+
+
+
+
+
+#function to create folder(nFolder, data):
 def createfolder(nwFolder):
     ii = pathlib.Path(__file__).parent.resolve().parents[0]
     #print(f'{str(ii)} is main directory')
@@ -114,7 +140,7 @@ def getTickerEarliesrTimeStamp(twelvedata_api_key, ticker, interval):
     return mydict
 
 
-def getdata_12data(twelvedata_api_key, ticker, interval, start_date): #do i need to add timezone?
+def getdata_12data(twelvedata_api_key, ticker, interval, start_date, earliestDateTime_data, earliestUnixTime_data): #do i need to add timezone?
     # TwelveData Work
     data_types = ["time_series", "dividends", "splits"]
     #data_types = ["splits"]
@@ -138,8 +164,8 @@ def getdata_12data(twelvedata_api_key, ticker, interval, start_date): #do i need
     spError_df = pd.DataFrame()
 
     for data_type in data_types:
-        print("+" * 60) 
-        print(f'working on {data_type} now')
+        #print("+" * 60) 
+        #print(f'working on {data_type} for {ticker} now')
         #print("+" * 60)
         # time series data - adjusted close price
         # ref: https://support.twelvedata.com/en/articles/5179064-are-the-prices-adjusted
@@ -163,11 +189,11 @@ def getdata_12data(twelvedata_api_key, ticker, interval, start_date): #do i need
             status_data = json_object['status']
 
             if status_data == 'ok':
-                #print("")
-                print("=" * 60)
-                print(f'status: {status_data} for {data_type} of {ticker} ticker')
-                print(f'{data_type} data captured from twelvedata api for {ticker} ticker')
-                print("=" * 60)
+                ##print("")
+                #print("=" * 60)
+                #print(f'status: {status_data} for {data_type} of {ticker} ticker')
+                #print(f'{data_type} data captured from twelvedata api for {ticker} ticker')
+                #print("=" * 60)
 
                 meta_data = json_object['meta']
                 meta_df = pd.DataFrame(meta_data, index=[0]) # will add start and end dates to meta_df
@@ -180,6 +206,7 @@ def getdata_12data(twelvedata_api_key, ticker, interval, start_date): #do i need
                 # print(value_data)
                 #print(value_df.head(5))
 
+                # creation of json file for files with status ok
                 #mypath = pathlib.Path(f'{p}', f'{ticker}_{data_type}.json')
                 #with open(mypath, "w") as outfile:
                 #    json.dump(json_object, outfile)
@@ -199,11 +226,11 @@ def getdata_12data(twelvedata_api_key, ticker, interval, start_date): #do i need
             elif status_data == 'error':
                 code_data = json_object['code']
                 mess_data = json_object['message']
-                #print("")
-                print("=" * 60)
-                print(f'{data_type} data error from twelvedata api for {ticker} stock')
-                print(f'error code:{code_data} | message: {mess_data}')
-                print("=" * 60)
+                ##print("")
+                #print("=" * 60)
+                #print(f'{data_type} data error from twelvedata api for {ticker} stock')
+                #print(f'error code:{code_data} | message: {mess_data}')
+                #print("=" * 60)
 
                 
 
@@ -219,15 +246,16 @@ def getdata_12data(twelvedata_api_key, ticker, interval, start_date): #do i need
                 elif data_type == "splits":
                     spError_df = error_df
 
+                # creation of json file for files with status error
                 #mypath = pathlib.Path(f'{p}', f'{ticker}_{data_type}_error.json')
                 #with open(mypath, "w") as outfile:
                 #    json.dump(json_object, outfile)
 
         elif (status_exist == False):
-            #print("")
-            print("=" * 60)
-            print(f'{data_type} data from twelvedata api for {ticker} stock')
-            print("=" * 60)
+            ##print("")
+            #print("=" * 60)
+            #print(f'{data_type} data from twelvedata api for {ticker} stock')
+            #print("=" * 60)
 
             meta_data = json_object['meta']
             meta_df = pd.DataFrame(meta_data, index=[0]) # will add start and end dates to meta_df
@@ -245,6 +273,7 @@ def getdata_12data(twelvedata_api_key, ticker, interval, start_date): #do i need
             # print(value_data)
             #print(value_df.head(5))
 
+            # creation of json file for files with no status
             #mypath = pathlib.Path(f'{p}', f'{ticker}_{data_type}.json')
             #with open(mypath, "w") as outfile:
             #    json.dump(json_object, outfile)
@@ -261,14 +290,12 @@ def getdata_12data(twelvedata_api_key, ticker, interval, start_date): #do i need
                 spMeta_df = meta_df
                 spData_df = value_df 
                 
-        earliestTimeStampDct = getTickerEarliesrTimeStamp(twelvedata_api_key, ticker, interval)
-        earliestdatetime  = earliestTimeStampDct['datetime_data']
-        earliestUnix_time = earliestTimeStampDct['unix_time_data']
-        
         counter += 1
         ticker_dc = singleTickerData(ticker=ticker, 
-                                    earliestdatetime=earliestdatetime,
-                                    earliestUnix_time=earliestUnix_time,
+                                    interval=interval,
+                                    start_date=start_date,
+                                    earliestdatetime=earliestDateTime_data,
+                                    earliestUnix_time=earliestUnixTime_data,
                                     df_tsMeta=tsMeta_df, 
                                     df_tsData=tsData_df,
                                     df_tsError=tsError_df, 
@@ -282,44 +309,48 @@ def getdata_12data(twelvedata_api_key, ticker, interval, start_date): #do i need
     # check ticker_dc contents
     print("=" * 80)
     print(f'ticker check for {ticker_dc.ticker}')
+    print(f'ticker interval is {ticker_dc.interval}')
+    print(f'ticker stock data from date {ticker_dc.start_date}')
     print(f'Earliest Date-time for {ticker_dc.ticker} is {ticker_dc.earliestdatetime}')
     print(f'Earliest Unix-time for {ticker_dc.ticker} is {ticker_dc.earliestUnix_time}')
-    print(f'column qty of df_tsMeta is {len(ticker_dc.df_tsMeta.columns)}') 
-    print(f'column qty of df_tsData is {len(ticker_dc.df_tsData.columns)}') 
-    print(f'column qty of df_tsError is {len(ticker_dc.df_tsError.columns)}') 
-    print(f'column qty of df_dvMeta is {len(ticker_dc.df_dvMeta.columns)}') 
-    print(f'column qty of df_dvData is {len(ticker_dc.df_dvData.columns)}') 
-    print(f'column qty of df_dvError is {len(ticker_dc.df_dvError.columns)}') 
-    print(f'column qty of df_spMeta is {len(ticker_dc.df_spMeta.columns)}') 
-    print(f'column qty of df_spData is {len(ticker_dc.df_spData.columns)}')   
-    print(f'column qty of df_spError is {len(ticker_dc.df_spError.columns)}')    
+    print(f'column qty of df_tsMeta is {len(ticker_dc.df_tsMeta.index)}') 
+    print(f'column qty of df_tsData is {len(ticker_dc.df_tsData.index)}') 
+    print(f'column qty of df_tsError is {len(ticker_dc.df_tsError.index)}') 
+    print(f'column qty of df_dvMeta is {len(ticker_dc.df_dvMeta.index)}') 
+    print(f'column qty of df_dvData is {len(ticker_dc.df_dvData.index)}') 
+    print(f'column qty of df_dvError is {len(ticker_dc.df_dvError.index)}') 
+    print(f'column qty of df_spMeta is {len(ticker_dc.df_spMeta.index)}') 
+    print(f'column qty of df_spData is {len(ticker_dc.df_spData.index)}')   
+    print(f'column qty of df_spError is {len(ticker_dc.df_spError.index)}')    
     print("=" * 80)                                   
     return ticker_dc
 
 def returnTickerLst():
-    Tickers = ['brtx','gree','sxtc',
-         'VCF','NVEC','CPHC','OVBC','LARK','BOTJ','CHMG','USEG','UG',
-         'SYTA','ARTW','VFL','UNB','ALAC','HMNF','WAFU','AEHL','GFED',
-         'OPHC','OPNT','WSTG','SGMA','AE','EGF','FMY','INDP','CSPI','IOR',
-         'NATH','LLL', 'RMED','GRF','LEDS','DXR','HIHO','MRM','AHPI','DTST',
-         'PNBK','NXN','AWX','STRT','ISDR','SMIT','ALTM','NEN','PDEX','UTMD',
-         'NWLI','WINA', 'DUOT','NVR','CFFI','ACU','AUBN','ARKR','ESBK','CARV',
-         'TAYD','JCTCF','AGIL','PATI','ELSE','FCAP','TRT','PW','UBOH','FFHL',
-         'RMBL','HFBL', 'DHIL','PFIN','SBET','WTM','IROQ','LTRPB','HSON','BBLG',
-         'AIRT','MSVB','GLBZ','JAN','SAL','SVFD','AINC','KEQU','EMCF','LRFC',
-         'PFX','NSYS','EDRY','SZC','SFBC','RAND','CLWT','NSEC','KSPN','GBNY',
-         'BCACU','RBCN','ESP','SVT','NCSM','NOM','SNOA','HSDT','UUU','JRJC',
-         'TTP','INTG','SRV','SUMR','HIFS','MXC','FEMY','BH','AAMC','MAYS','PNRG',
-         'MARPS','IKNX','TSRI','CKX','MTEX','ITIC','MTR','BDL','NDP','RHE','ATRI',
-         'MXE','ISIG','WVFC','BHV','LIVE','ACY','CNTX','GYRO','VBFC','DJCO','COHN',
-         'SEB','CVR','BRTX','DIT','mitq'
-          ]
+    #Tickers = ['brtx','gree','sxtc',
+    #     'VCF','NVEC','CPHC','OVBC','LARK','BOTJ','CHMG','USEG','UG',
+    #     'SYTA','ARTW','VFL','UNB','ALAC','HMNF','WAFU','AEHL','GFED',
+    #     'OPHC','OPNT','WSTG','SGMA','AE','EGF','FMY','INDP','CSPI','IOR',
+    #     'NATH','LLL', 'RMED','GRF','LEDS','DXR','HIHO','MRM','AHPI','DTST',
+    #     'PNBK','NXN','AWX','STRT','ISDR','SMIT','ALTM','NEN','PDEX','UTMD',
+    #     'NWLI','WINA', 'DUOT','NVR','CFFI','ACU','AUBN','ARKR','ESBK','CARV',
+    #     'TAYD','JCTCF','AGIL','PATI','ELSE','FCAP','TRT','PW','UBOH','FFHL',
+    #     'RMBL','HFBL', 'DHIL','PFIN','SBET','WTM','IROQ','LTRPB','HSON','BBLG',
+    #     'AIRT','MSVB','GLBZ','JAN','SAL','SVFD','AINC','KEQU','EMCF','LRFC',
+    #     'PFX','NSYS','EDRY','SZC','SFBC','RAND','CLWT','NSEC','KSPN','GBNY',
+    #     'BCACU','RBCN','ESP','SVT','NCSM','NOM','SNOA','HSDT','UUU','JRJC',
+    #     'TTP','INTG','SRV','SUMR','HIFS','MXC','FEMY','BH','AAMC','MAYS','PNRG',
+    #     'MARPS','IKNX','TSRI','CKX','MTEX','ITIC','MTR','BDL','NDP','RHE','ATRI',
+    #     'MXE','ISIG','WVFC','BHV','LIVE','ACY','CNTX','GYRO','VBFC','DJCO','COHN',
+    #     'SEB','CVR','BRTX','DIT','mitq'
+    #      ]
+    Tickers = ['brtx','gree','sxtc']
     return Tickers
 
-
+# main program controlling logic
 def main_run():
     tickerlst = returnTickerLst()
     TickerDCLst = []
+    multiTickerDCLst = []
     for ticker in tickerlst:
         # api keys
         #alpha_vantage_api_key = "FYQD4Z70A1KX5QI9"
@@ -329,35 +360,31 @@ def main_run():
         start_date = "2016-01-20"
         end_date = ""
         timezone = ""
-        singleTickerDC = singleTickerInput(twelvedata_api_key, ticker, interval, start_date, end_date, timezone )
+        
+        useEarliestTimeStamp = True
+        earliestTimeStampDct = getTickerEarliesrTimeStamp(twelvedata_api_key, ticker, interval)
+        earliestDateTime_data  = earliestTimeStampDct['datetime_data']
+        earliestUnixTime_data  = earliestTimeStampDct['unix_time_data']
+
+        if useEarliestTimeStamp == True:
+            start_date  = earliestDateTime_data
+
+        singleTickerDC = singleTickerInput(twelvedata_api_key, ticker, interval, start_date, end_date, earliestDateTime_data, earliestUnixTime_data, timezone )
         TickerDCLst.append(singleTickerDC)
-    
-    multiTickerDCLst = []
+        
+       
     for tickerdata in TickerDCLst:
-        single_ticker_dc = getdata_12data(tickerdata.twelvedata_api_key, tickerdata.ticker, tickerdata.interval, tickerdata.start_date)
+        single_ticker_dc = getdata_12data(tickerdata.twelvedata_api_key, tickerdata.ticker, tickerdata.interval, tickerdata.start_date, 
+                                            tickerdata.earliestDateTime_data, tickerdata.earliestUnixTime_data)
+        #sleep(10)
         multiTickerDCLst.append(single_ticker_dc)
 
     multi_ticker_dc = multiTickerData(listTickerDClass = multiTickerDCLst)
 
-    for tick in multi_ticker_dc:
-        aa = tick.ticker
-        print(aa)
-
-#if __name__ == "__main__":
-#    print ("Executing main Program Now")
-#    main_run()
-#else:
-#    print ("Executed when imported")
-
-# code for quick test
-twelvedata_api_key = "7940a5c7698545e98f6617f235dd1d5d"
-tickers = ["AAPL", "brtx"]
-interval = "1min"
-start_date = "2016-01-20"
-TickDClst = []
-for ticker in tickers:
-    singleTickDC = getdata_12data(twelvedata_api_key, ticker, interval, start_date)
-    TickDClst.append(singleTickDC)
-    sleep(10)
-
-AllTickDC = multiTickerData(TickDClst)
+# logic runner
+if __name__ == "__main__":
+    print ("Executing main Program Now")
+    #main_run()
+    getDateRange()
+else:
+    print ("Executed when imported")
