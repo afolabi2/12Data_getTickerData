@@ -49,8 +49,8 @@ import math
 
 
 
-# data class to hold each ticker data
-@dataclass
+
+@dataclass # data class to hold single ticker dataclass object
 class singleTickerData(object):
     ticker: str
     interval: str
@@ -67,13 +67,13 @@ class singleTickerData(object):
     df_spData : pd.core.frame.DataFrame
     df_spError : pd.core.frame.DataFrame
 
-@dataclass
+@dataclass # data class to hold list of ticker dataclass object
 class multiTickerData(object):
     listTickerDClass: list
     def populatelist(dcItem):
         listTickerDClass.append(dcItem)
 
-@dataclass
+@dataclass # data class to hold input values for each ticker - mostly useless might remove it
 class singleTickerInput(object):
     # api keys
     #alpha_vantage_api_key : str = "FYQD4Z70A1KX5QI9"
@@ -86,7 +86,10 @@ class singleTickerInput(object):
     earliestUnixTime_data: str = ""
     timezone: str = ""   
 
-def getTimeUnits(interval, start_date, end_date, timedeltaInMinutes): #get the value of time for each interval
+""" # returns list of calculated start/end time/date that program will run to get complete range of data: 
+    use this to circumspect the 5000entries limit per api call
+    """
+def getStartStopRngeLst(interval, start_date, end_date, timedeltaInMinutes): 
     max_outputsze   = 5000
     timedeltaInSeconds = timedeltaInMinutes * 60
     interval_lst         = ['1min', '5min', '15min', '30min', '45min', '1h', '2h', '4h', '1day', '1week', '1month']
@@ -139,13 +142,22 @@ def getTimeUnits(interval, start_date, end_date, timedeltaInMinutes): #get the v
         count += 1
     return listStartEndDates
 
+# function returns new date from the sum of date and time interval provided
+def addTimeDelta(date_str, timeRangeinMinutes):
+    date       = datetime.strptime(f'{date_str}', '%Y-%m-%d' '%H:%M:%S')
+    curr_seconds_range = timeRangeinMinutes * 60
+    time_delta = timedelta(seconds=curr_seconds_range)
+    date = date + time_delta
+    date_str = date.strftime.strftime('%Y-%m-%d' '%H:%M:%S')
+    return date_str, date
 
+# function returns todays date
 def getTodaysDate():
-    today_str = datetime.today().strftime('%Y-%m-%d')
-    today = datetime.strptime(f'{today_str}', '%Y-%m-%d')
+    today_str = datetime.today().strftime('%Y-%m-%d' '%H:%M:%S')
+    today = datetime.strptime(f'{today_str}', '%Y-%m-%d' '%H:%M:%S')
     return today_str, today
 
-# function to get date ranges
+# function to get date ranges that will be broken down into a list of smaller start/stop pairs
 def getDateRange(twelvedata_api_key, ticker, interval,
                 timeRangeOption = 'EarliestTimeStamp_TodaysDate',
                 user_start_date_str = "", user_end_date_str = "",
@@ -164,7 +176,7 @@ def getDateRange(twelvedata_api_key, ticker, interval,
         # TIMESTAMP
         time_dict = getTickerEarliesrTimeStamp(twelvedata_api_key, ticker, interval)
         start_date_str = time_dict['datetime_data'] 
-        start_date = datetime.strptime(f'{start_date_str}', '%Y-%m-%d')
+        start_date = datetime.strptime(f'{start_date_str}', '%Y-%m-%d' '%H:%M:%S') 
         
         # TODAYSDATE
         end_date_str, end_date = getTodaysDate()
@@ -173,6 +185,7 @@ def getDateRange(twelvedata_api_key, ticker, interval,
         duration = end_date - start_date
         diff_in_minutes = duration.total_seconds() / 60
         diff_in_minutes = math.floor(diff_in_minutes)
+    
     elif useEarliestTimeStamp == 'earliestTimeStamp_userEndDate':
         # TIMESTAMP
         time_dict = getTickerEarliesrTimeStamp(twelvedata_api_key, ticker, interval)
@@ -187,6 +200,7 @@ def getDateRange(twelvedata_api_key, ticker, interval,
         duration = end_date - start_date
         diff_in_minutes = duration.total_seconds() / 60
         diff_in_minutes = math.floor(diff_in_minutes)
+    
     elif useEarliestTimeStamp == 'earliestTimeStamp_timeRange':
         # TIMESTAMP
         time_dict = getTickerEarliesrTimeStamp(twelvedata_api_key, ticker, interval)
@@ -194,15 +208,14 @@ def getDateRange(twelvedata_api_key, ticker, interval,
         start_date = datetime.strptime(f'{start_date_str}', '%Y-%m-%d' '%H:%M:%S')
         
         # TIMERANGE
-        #needs correction
-        end_date_str  = user_end_date_str
-        end_date =  datetime.strptime(f'{end_date_str}', '%Y-%m-%d' '%H:%M:%S')
+        end_date_str, end_date = addTimeDelta(start_date_str, timeRangeinMinutes)
 
         # DURATION CALCS.
         duration = end_date - start_date
         diff_in_minutes = duration.total_seconds() / 60
         diff_in_minutes = math.floor(diff_in_minutes)
         print(type(diff_in_minutes))
+    
     elif useEarliestTimeStamp == 'userStartDate_todaysDate':
         # STARTDATE
         start_date_str = user_start_date_str 
@@ -216,14 +229,14 @@ def getDateRange(twelvedata_api_key, ticker, interval,
         diff_in_minutes = duration.total_seconds() / 60
         diff_in_minutes = math.floor(diff_in_minutes)
         print(type(diff_in_minutes))
+    
     elif useEarliestTimeStamp == 'userStartDate_timeRange':
         # STARTDATE
         start_date_str = user_start_date_str 
         start_date = datetime.strptime(f'{start_date_str}', '%Y-%m-%d' '%H:%M:%S')
         
         # TIMERANGE
-        #needs correction
-        end_date_str, end_date = getTodaysDate()
+        end_date_str, end_date = addTimeDelta(start_date_str, timeRangeinMinutes)
         
         # DURATION CALCS.
         duration = end_date - start_date
@@ -237,8 +250,7 @@ def getDateRange(twelvedata_api_key, ticker, interval,
         end_date = datetime.strptime(f'{end_date_str}', '%Y-%m-%d' '%H:%M:%S')
         
         # TIMERANGE
-        #needs correction
-        end_date_str, end_date = getTodaysDate()
+        start_date_str, start_date = addTimeDelta(end_date_str, timeRangeinMinutes)
         
         # DURATION CALCS.
         duration = end_date - start_date
@@ -261,14 +273,15 @@ def getDateRange(twelvedata_api_key, ticker, interval,
         diff_in_minutes = math.floor(diff_in_minutes)
         print(type(diff_in_minutes)) 
 
-    getTimeUnits(interval, start_date, end_date, diff_in_minutes)
+    listStartEndDates = getStartStopRngeLst(interval, start_date, end_date, diff_in_minutes)
+    return listStartEndDates
 
 
 
 
     #return diff_in_minutes, start_date_dttime
 
-# function to create folder(nFolder, data):
+# function to create folder(nFolder):
 def createfolder(nwFolder):
     ii = pathlib.Path(__file__).parent.resolve().parents[0]
     #print(f'{str(ii)} is main directory')
@@ -282,7 +295,7 @@ def createfolder(nwFolder):
         #f.write(data)
     return p
 
-# def function to get earliest timestamp for each stock
+# def function to get earliest timestamp for each stock ticker
 def getTickerEarliesrTimeStamp(twelvedata_api_key, ticker, interval):
     data_types = ["earliest_timestamp"]
     #twelvedata_url = f'https://api.twelvedata.com/{data_types}?symbol={ticker}&interval=1day&apikey={twelvedata_api_key}'
@@ -304,7 +317,7 @@ def getTickerEarliesrTimeStamp(twelvedata_api_key, ticker, interval):
     mydict['unix_time_data'] = unix_time_data
     return mydict
 
-
+# get stock ticker main data
 def getdata_12data(twelvedata_api_key, ticker, interval, start_date, earliestDateTime_data, earliestUnixTime_data): #do i need to add timezone?
     # TwelveData Work
     data_types = ["time_series", "dividends", "splits"]
@@ -564,7 +577,7 @@ def tester():
         #timeRangeOption = 'userStartDate_userEndDate'
 
         #assumed value of timeRangeOption from steamlit
-        timeRangeOption = 'earliestTimeStamp_userEndDate' 
+        timeRangeOption = 'userStartDate_timeRange' 
         
         if timeRangeOption == 'EarliestTimeStamp_TodaysDate':
             # this data will come from streamlit input
@@ -583,8 +596,7 @@ def tester():
         elif timeRangeOption == 'earliestTimeStamp_timeRange':
            # this data will come from streamlit input
             timezone = ""
-            #THIS NEEDS CORRECTION
-            timeRangeinMinutes = "XXXXX"
+            timeRangeinMinutes = 15000
             lstDateRnge = getDateRange(twelvedata_api_key, ticker, interval, 
                                         timeRangeOption = 'earliestTimeStamp_timeRange', 
                                         timeRangeinMinutes = timeRangeinMinutes)
@@ -601,8 +613,7 @@ def tester():
             # this data will come from streamlit input
             timezone = ""
             start_date = "2021-12-27"
-            #THIS NEEDS CORRECTION
-            timeRangeinMinutes = "XXXXX"
+            timeRangeinMinutes = 15000
             lstDateRnge = getDateRange(twelvedata_api_key, ticker, interval, 
                                         timeRangeOption = 'userStartDate_timeRange', 
                                         user_start_date_str = start_date, 
@@ -612,8 +623,7 @@ def tester():
             # this data will come from streamlit input
             timezone = ""
             end_date = "2021-12-27"
-            #THIS NEEDS CORRECTION
-            timeRangeinMinutes = "XXXXX"
+            timeRangeinMinutes = 15000
             lstDateRnge = getDateRange(twelvedata_api_key, ticker, interval, 
                                         timeRangeOption = 'userEndDate_timeRange', 
                                         user_end_date_str = end_date, 
