@@ -69,16 +69,34 @@ if inst_radio == "Stock Ticker":
         msg = 'TICKER SELECTION'
         sideBarcolorHeader(fontcolor = '#800080', fontsze = 14, msg = msg)
 
-        tcker_select_type_lst   = ["Single or Multiple Ticker(s) Symbols", "Ticker(s) Symbols from File"]
+        tcker_select_type_lst   = ["Single or Multiple Ticker(s) Symbols", "(Incomplete)Ticker(s) Symbols from File"]
         tcker_select_type_radio = st.sidebar.radio("How do you want to select your Ticker", tcker_select_type_lst)
 
         if (tcker_select_type_radio == "Single or Multiple Ticker(s) Symbols"):
             tcker_12data_list = g12d.get_tcker_list(apikey_12Data )
             item_qty = len(tcker_12data_list)
             tckerlst_select = st.sidebar.multiselect('Type in the ticker here',  tcker_12data_list)
-        elif tcker_select_type_radio == "Tickers Symbols from File":
-            pass
-        # this needs to be worked on for logic accepting file details
+        elif tcker_select_type_radio == "(Incomplete)Ticker(s) Symbols from File":
+            uploaded_file = st.sidebar.file_uploader("Choose a file for Ticker Symbol(s)")
+          
+            if uploaded_file is not None:
+               
+                # To convert to a string based IO:
+                stringio = StringIO(uploaded_file.getvalue().decode("utf-8"))
+                st.write(stringio)          
+                
+                # To read file as string:
+                string_data = stringio.read()
+                st.write(string_data)           
+                
+                ## Can be used wherever a "file-like" object is accepted:
+                #dataframe = pd.read_csv(uploaded_file)
+                #st.write(dataframe)
+
+                ## To read file as bytes:
+                #bytes_data = uploaded_file.getvalue()
+                #st.write(bytes_data) 
+                # this needs to be worked on for logic accepting file details
 
         
 
@@ -91,7 +109,7 @@ if inst_radio == "Stock Ticker":
         st.sidebar.write(f'**Selected Stock Data Interval is {interval}**')
         st.sidebar.markdown("---")        
 
-        #st.markdown("### TIME RANGE SELECTION")
+        #st.markdown("""### TIME RANGE SELECTION\START DATE""")
         #timeRangeOption = st.selectbox('Please select type of Time Range Selection',
         #                                ('earliestTimeStamp_todaysDate',
         #                                'earliestTimeStamp_userEndDate',
@@ -103,8 +121,8 @@ if inst_radio == "Stock Ticker":
         #st.write('You selected:', timeRangeOption)
         #st.markdown("---")
 
-        msg = 'TIME RANGE SELECTION'
-        sideBarcolorHeader(fontcolor = '#800080', fontsze = 14, msg = msg)
+        msg = 'TIME RANGE SELECTION: START DATE'
+        sideBarcolorMarkDown(fontcolor = '#800080', fontsze = 14, msg = msg)
         approvedDateInputType = ('user provided StartDate', 'user provided EndDate')
         AllTimeRngeTuple = ('earliestTimeStamp','user provided StartDate', 'user provided EndDate', 'Time Interval', "Today's Date")
 
@@ -122,7 +140,8 @@ if inst_radio == "Stock Ticker":
         
         st.sidebar.markdown("---")
 
-
+        msg = 'TIME RANGE SELECTION: END DATE'
+        sideBarcolorMarkDown(fontcolor = '#800080', fontsze = 14, msg = msg)
         EndTimeRngeTuple = ('earliestTimeStamp','user provided StartDate', 'user provided EndDate', 'Time Interval', "Today's Date" )
         if startTimeRangeOption == 'earliestTimeStamp':
             EndTimeRngeTuple = ('user provided EndDate', 'Time Interval', "Today's Date")
@@ -195,6 +214,11 @@ msg = '> 2. Remove Streamlit Footer,Icon, Menues, configure theme'
 colorMarkDown(fontcolor = '#FF0000', fontsze = 14, msg=msg)
 msg = '> 3. Do we need additional filters for ticker symbols'
 colorMarkDown(fontcolor = '#FF0000', fontsze = 14, msg=msg)
+msg = '> 4. Add button for clear values besides submit'
+colorMarkDown(fontcolor = '#FF0000', fontsze = 14, msg=msg)
+
+st.markdown("---")
+
 
 
             
