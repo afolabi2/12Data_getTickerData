@@ -1,9 +1,23 @@
 import streamlit as st
+import pandas as pd
 import datetime
 import get12Data as g12d
 
 # to run streamlit app
 # streamlit run ./files.py/streamlit-app.py
+
+# set page config options
+st.set_page_config(page_title="Ticker Stream", 
+                    page_icon=":stock_chart:", 
+                    layout="wide", 
+                    initial_sidebar_state="expanded", 
+                    menu_items={
+         'Get Help': 'https://www.extremelycoolapp.com/help',
+         'Report a bug': "https://www.extremelycoolapp.com/bug",
+         'About': "# This is a header. This is an *extremely* cool app!"
+     }) #auto None
+
+
 
 # ====================
 # HELPER FUNCTIONS
@@ -24,6 +38,13 @@ def colorHeader(fontcolor = '#33ff33', fontsze = 30, msg="Enter some Text"):
 def sideBarcolorHeader(fontcolor = '#33ff33', fontsze = 30, msg="Enter some Text"):
     # will need color to color coding map. default color '#33ff33' is green
     st.sidebar.markdown(f'<h1 style="color:{fontcolor};font-size:{fontsze}px;">{msg}</h1>', unsafe_allow_html=True)
+
+# ====================
+# API CALLS 
+# ====================
+apikey1_12Data = "7940a5c7698545e98f6617f235dd1d5d"
+stocks_df = g12d.get_tck_stocks_df(apikey1_12Data)
+st.dataframe(stocks_df)
 
 
 # ====================
@@ -69,13 +90,43 @@ if inst_radio == "Stock Ticker":
         msg = 'TICKER SELECTION'
         sideBarcolorHeader(fontcolor = '#800080', fontsze = 14, msg = msg)
 
-        tcker_select_type_lst   = ["Single or Multiple Ticker(s) Symbols", "(Incomplete)Ticker(s) Symbols from File"]
+        tcker_select_type_lst   = ["Single or Multiple Ticker(s) Symbols", "Filters", "(Incomplete)Ticker(s) Symbols from File"]
         tcker_select_type_radio = st.sidebar.radio("How do you want to select your Ticker", tcker_select_type_lst)
 
         if (tcker_select_type_radio == "Single or Multiple Ticker(s) Symbols"):
-            tcker_12data_list = g12d.get_tcker_list(apikey_12Data )
-            item_qty = len(tcker_12data_list)
-            tckerlst_select = st.sidebar.multiselect('Type in the ticker here',  tcker_12data_list)
+            tcker_symbol_lst = g12d.get_tcker_symbol_lst(stocks_df)
+            tckerlst_select = st.sidebar.multiselect('Type in the ticker here',  tcker_symbol_lst)
+        
+        elif (tcker_select_type_radio == "Filters"):
+            symbol_lst = g12d.get_tcker_symbol_lst(stocks_df)
+            symbol_select = st.sidebar.multiselect('Type in the ticker symbol here', options = symbol_lst)
+
+            type_lst = g12d.get_tcker_type_lst(stocks_df)
+            type_select = st.sidebar.multiselect('Type in the ticker type here', 
+                                                options = type_lst,
+                                                default = ["Common", "Common Stock", "EQUITY"])
+
+            country_lst = g12d.get_tcker_country_lst(stocks_df)
+            country_select = st.sidebar.multiselect('Type in the ticker country here', 
+                                                    options = country_lst,
+                                                    default = ["United States"])
+
+            exchange_lst = g12d.get_tcker_exchange_lst(stocks_df)
+            exchange_select = st.sidebar.multiselect('Type in the ticker exchange here',
+                                                    options = exchange_lst,
+                                                    default = ["NASDAQ"])
+
+            filter_submit = st.sidebar.button('Submit Filter Selection')
+            if filter_submit:
+                selection_df = g12d.filter_tcker(apikey_12Data, stocks_df, symbol_select, 
+                                            type_select, country_select, exchange_select)  
+
+
+                
+            
+
+        
+        
         elif tcker_select_type_radio == "(Incomplete)Ticker(s) Symbols from File":
             uploaded_file = st.sidebar.file_uploader("Choose a file for Ticker Symbol(s)")
           
@@ -182,42 +233,42 @@ else:
      #st.write('Goodbye')
 
 
-# ====================
-# MAIN AREA 
-# ====================
-#Text Title
-author = 'akt'
-version = '0.001'
-title_01 = f'Pull Stock Data App(Streamlit)'
-st.title(title_01)
-
-#Text Header/SubHeader
-header_01    = f'by {author}'
-subheader_01 = f'@version{version}'
-st.header(header_01)
-st.subheader(subheader_01)
-
-st.markdown("---")
-msg = 'INSTRUCTIONS/NOTES'
-colorHeader(fontcolor = '#02075d', msg = msg)
-st.markdown('**to run streamlit app**')
-code_01 = '''streamlit run ./files.py/app.py'''
-st.code(code_01, language='python')
-# streamlit run ./files.py/app.py
-
-st.markdown("---")
-msg = 'WAITING TASKS'
-colorHeader(fontcolor = '#02075d', msg = msg)
-msg = '> 1. Make Ticker Symbol  listing faster'
-colorMarkDown(fontcolor = '#FF0000', fontsze = 14, msg=msg)
-msg = '> 2. Remove Streamlit Footer,Icon, Menues, configure theme'
-colorMarkDown(fontcolor = '#FF0000', fontsze = 14, msg=msg)
-msg = '> 3. Do we need additional filters for ticker symbols'
-colorMarkDown(fontcolor = '#FF0000', fontsze = 14, msg=msg)
-msg = '> 4. Add button for clear values besides submit'
-colorMarkDown(fontcolor = '#FF0000', fontsze = 14, msg=msg)
-
-st.markdown("---")
+## ====================
+## MAIN AREA 
+## ====================
+##Text Title
+#author = 'akt'
+#version = '0.001'
+#title_01 = f'Pull Stock Data App(Streamlit)'
+#st.title(title_01)
+#
+##Text Header/SubHeader
+#header_01    = f'by {author}'
+#subheader_01 = f'@version{version}'
+#st.header(header_01)
+#st.subheader(subheader_01)
+#
+#st.markdown("---")
+#msg = 'INSTRUCTIONS/NOTES'
+#colorHeader(fontcolor = '#02075d', msg = msg)
+#st.markdown('**to run streamlit app**')
+#code_01 = '''streamlit run ./files.py/app.py'''
+#st.code(code_01, language='python')
+## streamlit run ./files.py/app.py
+#
+#st.markdown("---")
+#msg = 'WAITING TASKS'
+#colorHeader(fontcolor = '#02075d', msg = msg)
+#msg = '> 1. Make Ticker Symbol  listing faster'
+#colorMarkDown(fontcolor = '#FF0000', fontsze = 14, msg=msg)
+#msg = '> 2. Remove Streamlit Footer,Icon, Menues, configure theme'
+#colorMarkDown(fontcolor = '#FF0000', fontsze = 14, msg=msg)
+#msg = '> 3. Do we need additional filters for ticker symbols'
+#colorMarkDown(fontcolor = '#FF0000', fontsze = 14, msg=msg)
+#msg = '> 4. Add button for clear values besides submit'
+#colorMarkDown(fontcolor = '#FF0000', fontsze = 14, msg=msg)
+#
+#st.markdown("---")
 
 
 

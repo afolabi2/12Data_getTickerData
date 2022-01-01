@@ -1,0 +1,75 @@
+{
+    "dividends_and_splits": {
+        "5_year_average_dividend_yield": 1.2,
+        "dividend_date": "2021-11-11",
+        "ex_dividend_date": "2021-11-05",
+        "forward_annual_dividend_rate": 0.88,
+        "forward_annual_dividend_yield": 0.0049,
+        "last_split_date": "2020-08-31",
+        "last_split_factor": "4-for-1 split",
+        "payout_ratio": 0.1515,
+        "trailing_annual_dividend_rate": 0.85,
+        "trailing_annual_dividend_yield": 0.004769922
+    },
+    "financials": {
+        "balance_sheet": {
+            "book_value_per_share_mrq": 3.841,
+            "current_ratio_mrq": 1.075,
+            "revenue_ttm": 365817004032,
+            "total_cash_mrq": 62639001600,
+            "total_cash_per_share_mrq": 3.818,
+            "total_debt_mrq": 136521998336,
+            "total_debt_to_equity_mrq": 216.392
+        },
+        "cash_flow": {
+            "levered_free_cash_flow_ttm": 73295003648,
+            "operating_cash_flow_ttm": 104037998592
+        },
+        "fiscal_year_ends": "2021-09-25",
+        "income_statement": {
+            "diluted_eps_ttm": 5.61,
+            "ebitda": 120233000960,
+            "gross_profit_ttm": 152836000000,
+            "net_income_to_common_ttm": 94679998464,
+            "quarterly_earnings_growth_yoy": 0.622,
+            "quarterly_revenue_growth": 0.288,
+            "revenue_per_share_ttm": 21.904,
+            "revenue_ttm": 365817004032
+        },
+        "most_recent_quarter": "2021-09-25",
+        "operating_margin": 0.29782,
+        "profit_margin": 0.25882,
+        "return_on_assets_ttm": 0.20179,
+        "return_on_equity_ttm": 1.47443
+    },
+    "stock_price_summary": {
+        "beta": 1.203116,
+        "day_200_ma": 143.66846,
+        "day_50_ma": 161.5314,
+        "fifty_two_week_change": 0.3770188,
+        "fifty_two_week_high": 182.13,
+        "fifty_two_week_low": 116.21
+    },
+    "stock_statistics": {
+        "avg_10_volume": 77155985,
+        "avg_30_volume": 102890394,
+        "float_shares": 16389662475,
+        "percent_held_by_insiders": 0.0007,
+        "percent_held_by_institutions": 0.58829,
+        "shares_outstanding": 16406400000,
+        "shares_short": 113277024,
+        "short_percent_of_shares_outstanding": 0.0069,
+        "short_ratio": 1
+    },
+    "valuations_metrics": {
+        "enterprise_to_ebitda": 25.092,
+        "enterprise_to_revenue": 8.247,
+        "enterprise_value": 3016862466048,
+        "forward_pe": 28.72191,
+        "market_capitalization": 2912159006720,
+        "peg_ratio": 1.99,
+        "price_to_book_mrq": 46.212288,
+        "price_to_sales_ttm": 7.960699,
+        "trailing_pe": 31.640179
+    }
+}

@@ -1,14 +1,37 @@
-from datetime import datetime
-# ts = int('1284101485')
-# pm = datetime.utcfromtimestamp(ts)
-# # if you encounter a "year is out of range" error the timestamp
-# # may be in milliseconds, try `ts /= 1000` in that case
-# print(pm.strftime('%Y-%m-%d %H:%M:%S'))
-# print(type(pm))
-p1_str = '2021-12-25 20:40:00'
-p2_str = '2022-01-12 05:20:00'
-p1 = datetime.strptime(f'{p1_str}', '%Y-%m-%d %H:%M:%S')
-p2 = datetime.strptime(f'{p2_str}', '%Y-%m-%d %H:%M:%S')
-p3 = p2 - p1
-p4 = p3.total_seconds()/(5000 * 5 * 60)
-print(p4)
+import streamlit as st
+import datetime
+import get12Data as g12d
+import pandas as pd 
+import json
+
+# to run streamlit app
+# streamlit run ./files.py/old_testing.py
+
+symbol = 'AAPL'
+apikey_12Data = "7940a5c7698545e98f6617f235dd1d5d"
+shit_df = g12d.get_tck_lst_df(apikey_12Data)
+kill = st.dataframe(shit_df)
+
+type_filter = []
+country_filter = []
+exchange_filter = []
+
+
+type_filter = st.multiselect(
+    "Filter By Type",
+    options = sorted(shit_df["type"].unique()),
+    default = ["Common", "Common Stock", "EQUITY"])
+
+
+country_filter = st.multiselect(
+    "Filter By Country",
+    options = sorted(shit_df["country"].unique()),
+    default = ["United States"])
+
+exchange_filter = st.multiselect(
+    "Filter By Exchange",
+    options = sorted(shit_df["exchange"].unique()))
+    #default = sorted(shit_df["exchange"].unique()))
+
+
+print(type_filter)
