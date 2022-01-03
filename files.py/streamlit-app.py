@@ -11,6 +11,7 @@ from io import StringIO
 # SETTINGS FUNCTIONS
 # ====================
 # set page config options
+# webpage for page_icons: https://emojipedia.org/search/?q=chart
 st.set_page_config(page_title="Ticker Stream", 
                     page_icon=":stock_chart:", 
                     layout="wide", 
