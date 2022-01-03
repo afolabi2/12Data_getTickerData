@@ -58,6 +58,12 @@ def sideBarcolorHeader(fontcolor = '#33ff33', fontsze = 30, msg="Enter some Text
     st.sidebar.markdown(f'<h1 style="color:{fontcolor};font-size:{fontsze}px;">{msg}</h1>', unsafe_allow_html=True)
 
 # ====================
+# DATAFRAME FORMATTING 
+# ====================
+pd.options.display.float_format = '{:,}'.format
+
+
+# ====================
 # API CALLS 
 # ====================
 apikey1_12Data = "7940a5c7698545e98f6617f235dd1d5d"
@@ -117,10 +123,15 @@ if inst_radio == "Stock Ticker":
                 # To read file as string:
                 stringio = StringIO(uploaded_file.getvalue().decode("utf-8"))
                 string_data = stringio.read()
-                tcker_lst = get_tcker_lst_fromStringIO(string_data)
+                tcker_lst = g12d.get_tcker_lst_fromStringIO(string_data)
                     
                 illegal_tcker = list(set(tcker_lst) - set(stocks_df.symbol))
                 legal_tcker   = list(set(tcker_lst) - set(illegal_tcker))
+
+                if len(legal_tcker) > 0:
+                    symbol_lst = legal_tcker
+                    #symbol_lst = g12d.get_tcker_symbol_lst(stocks_df)
+                    symbol_select = st.sidebar.multiselect('Symbol list from file will appear here', symbol_lst, symbol_lst )
 
                 if len(illegal_tcker) > 0:
                     st.write(f"{len(illegal_tcker)} tickers do not exist in ticker list")
@@ -130,10 +141,7 @@ if inst_radio == "Stock Ticker":
                 st.markdown(legal_tcker)
                 st.markdown("---")
 
-                if len(legal_tcker) > 0:
-                    symbol_lst = legal_tcker
-                    #symbol_lst = g12d.get_tcker_symbol_lst(stocks_df)
-                    symbol_select = st.sidebar.multiselect('Symbol list from file will appear here', symbol_lst, symbol_lst )
+
 
 
         elif (tcker_select_type_radio == "Single or Multiple Ticker(s) Symbols"):
@@ -143,8 +151,8 @@ if inst_radio == "Stock Ticker":
             symbol_lst = g12d.get_tcker_symbol_lst(stocks_df)
             symbol_select = st.sidebar.multiselect('Type in the ticker symbol here', options = symbol_lst)
 
-            st.write(f"{len(symbol_lst)} tickers exist in ticker list")
-            st.markdown(symbol_lst)
+            st.write(f"{len(symbol_select)} tickers exist in ticker list")
+            st.markdown(symbol_select)
             st.markdown("---")
         
         st.sidebar.markdown("---")
