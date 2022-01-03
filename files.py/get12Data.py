@@ -74,13 +74,13 @@ def get_tck_stats_items(apikey_12Data, symbol):
             return shares_outstand_data, float_shares_data
     else:
         # we wont get data if we dont have a premium 12data subscription, go get data from yfinanace
-        shares_outstand_data,float_shares_data = yfd.get_yf_float_outstand_shares(symbol)
-        return shares_outstand_data, float_shares_data
+        shares_outstand_data, float_shares_data, error_out_shre, error_flt_shre = yfd.get_yf_float_outstand_shares(symbol)
+        return shares_outstand_data, float_shares_data, error_out_shre, error_flt_shre
 
 
 def get_tck_stats_items_from_yFin(symbol):
-    shares_outstand_data,float_shares_data = yfd.get_yf_float_outstand_shares(symbol)
-    return shares_outstand_data, float_shares_data
+    shares_outstand_data,float_shares_data, error_out_shre, error_flt_shre = yfd.get_yf_float_outstand_shares(symbol)
+    return shares_outstand_data, float_shares_data, error_out_shre, error_flt_shre
 
 
 #@st.cache
@@ -127,7 +127,10 @@ def filter_tcker_symbollist(symbol_lst):
 
 
 def filter_tcker(apikey_12Data, stocks_df, symbol_select, type_select, country_select, exchange_select):
-    print(f'symbol_select:{symbol_select}|type_select:{type_select}|country_select:{country_select}|exchange_select:{exchange_select}|')
+    print(f'symbol_select:{symbol_select}')
+    print(f'type_select:{type_select}')
+    print(f'country_select:{country_select}')
+    print(f'exchange_select:{exchange_select}')
     lstOfDf = []
     if len(symbol_select) != 0:
         cond_symbol = stocks_df["symbol"].isin(symbol_select)
@@ -159,9 +162,8 @@ def filter_tcker(apikey_12Data, stocks_df, symbol_select, type_select, country_s
         df_filter = pd.merge(lstOfDf[0], lstOfDf[1], how ='inner', on =['symbol', 'type', 'country', 'exchange'], suffixes=('', '_DROPA')).filter(regex='^(?!.*_DROPA)')
         df_filter = pd.merge( df_filter, lstOfDf[2], how ='inner', on =['symbol', 'type', 'country', 'exchange'], suffixes=('', '_DROPB')).filter(regex='^(?!.*_DROPB)')
         df_filter = pd.merge(df_filter, lstOfDf[3], how ='inner', on =['symbol', 'type', 'country', 'exchange'], suffixes=('', '_DROPC')).filter(regex='^(?!.*_DROPC)')
-
-    df_filter = combine_stock_stats_items(apikey_12Data, df_filter)
-    return df_filter
+    df_filter, symb_error_out_shre_lst, symb_error_flt_shre_lst = combine_stock_stats_items(apikey_12Data, df_filter)
+    return df_filter, symb_error_out_shre_lst, symb_error_flt_shre_lst
 
 
 def combine_stock_stats_items(apikey_12Data, data_df):
@@ -170,11 +172,16 @@ def combine_stock_stats_items(apikey_12Data, data_df):
     cond_lst = []
     shares_outstand_lst = []
     float_shares_lst = []
-
+    symb_error_out_shre_lst = []
+    symb_error_flt_shre_lst = []
     # loop names to get 2 shares data
     for symbol in symbol_lst:
-        shares_outstand_data, float_shares_data = get_tck_stats_items_from_yFin(symbol)
-        #st.write(f'symbol: {symbol} | shares_outstand_data:{shares_outstand_data} | float_shares_data: {float_shares_data}')
+        shares_outstand_data, float_shares_data, error_out_shre, error_flt_shre = get_tck_stats_items_from_yFin(symbol)
+        # append symbols not returning outstanding/float shares to error lists
+        if error_out_shre == True:
+            symb_error_out_shre_lst.append(symbol)
+        if error_flt_shre == True:
+            symb_error_flt_shre_lst.append(symbol)
         
         cond = (data_df["symbol"] == symbol)
         
@@ -184,7 +191,7 @@ def combine_stock_stats_items(apikey_12Data, data_df):
     
     data_df["shares-outstanding"] = np.select(cond_lst, shares_outstand_lst)
     data_df["float-shares"] = np.select(cond_lst, float_shares_lst)
-    return data_df
+    return data_df, symb_error_out_shre_lst, symb_error_flt_shre_lst
 
 
     # append data to data_df

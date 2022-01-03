@@ -13,14 +13,14 @@ from io import StringIO
 # set page config options
 # webpage for page_icons: https://emojipedia.org/search/?q=chart
 st.set_page_config(page_title="Ticker Stream", 
-                    page_icon=":stock_chart:", 
+                    page_icon="📈",
                     layout="wide", 
-                    initial_sidebar_state="expanded", 
-                    menu_items={
-         'Get Help': 'https://www.extremelycoolapp.com/help',
-         'Report a bug': "https://www.extremelycoolapp.com/bug",
-         'About': "# This is a header. This is an *extremely* cool app!"
-     }) #auto None
+                    initial_sidebar_state="expanded" 
+                    #,menu_items={
+                    #'Get Help': 'https://www.extremelycoolapp.com/help',
+                    #'Report a bug': "https://www.extremelycoolapp.com/bug",
+                    #'About': "# This is a header. This is an *extremely* cool app!"}
+                    ) #auto None
 
 # settings to remove top right hamburger menu
 st.markdown(""" <style>
@@ -116,8 +116,9 @@ if inst_radio == "Stock Ticker":
         tcker_select_type_lst   = ["Load Ticker(s) Symbols from File", "Single or Multiple Ticker(s) Symbols"]
         tcker_select_type_radio = st.sidebar.radio("How do you want to select your Ticker", tcker_select_type_lst)
 
-        # this is not yet finished, needs a function for loading the list
+        
         if tcker_select_type_radio == "Load Ticker(s) Symbols from File":
+            symbol_select = []
             st.sidebar.write(f"***Please Make sure file contents are comma delimited***") 
             uploaded_file = st.sidebar.file_uploader("Choose a file for Ticker Symbol(s)")
             if uploaded_file is not None:
@@ -176,9 +177,15 @@ if inst_radio == "Stock Ticker":
         
         filter_submit = st.sidebar.button('Submit Filter Selection')
         if filter_submit:
-            df_filter = g12d.filter_tcker(apikey_12Data, stocks_df, symbol_select, 
+            df_filter, symb_error_out_shre_lst, symb_error_flt_shre_lst = g12d.filter_tcker(apikey_12Data, stocks_df, symbol_select, 
                                         type_select, country_select, exchange_select)  
             st.write(f'{len(df_filter.index)} Nos. of Tickers Processed')
+            if symb_error_out_shre_lst > 0:
+                st.write(f'data unavailable for {len(symb_error_out_shre_lst)} Nos. of Tickers')
+                st.markdown(symb_error_out_shre_lst)
+            if symb_error_flt_shre_lst > 0:
+                st.write(f'data unavailable for {len(symb_error_flt_shre_lst)} Nos. of Tickers')
+                st.markdown(symb_error_flt_shre_lst)
             filter_dframe = st.dataframe(df_filter)
         
 

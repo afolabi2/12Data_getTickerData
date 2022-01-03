@@ -1,4 +1,5 @@
 import yfinance as yf
+import numpy as np
 
 #==========================
 # START FUNCTIONS
@@ -19,10 +20,13 @@ def get_tckerInfo_Obj(symbol):
 # OUTSTANDING SHARES FUNCTION
 #==========================
 def get_yf_outstand_shares_fromTckrObj(tckerInfo):
-    info_outstand_shares = tckerInfo['sharesOutstanding']
-    #print(info_outstand_shares)
-    #print("info_outstanding_shares............DONE")
-    return info_outstand_shares
+    error_outstand_share = False
+    try:
+        info_outstand_shares = tckerInfo['sharesOutstanding']
+    except KeyError:
+        info_outstand_shares = np.NaN
+        error_outstand_share = True
+    return error_outstand_share, info_outstand_shares
 
 def get_yf_outstanding_shares(symbol):
     tcker_info = get_tckerInfo_Obj(symbol)
@@ -32,10 +36,14 @@ def get_yf_outstanding_shares(symbol):
 # FLOAT SHARES FUNCTION
 #==========================
 def get_yf_float_shares_fromTckrObj(tckerInfo):
-    info_float_shares = tckerInfo['floatShares']
-    #print(info_float_shares)
-    #print("info_float_shares............DONE")
-    return info_float_shares
+    error_float_share = False
+    try:
+        info_float_shares = tckerInfo['floatShares']
+    except KeyError:
+        info_float_shares = np.NaN
+        error_float_share = True
+    return error_float_share, info_float_shares
+
 
 def get_yf_float_shares(symbol):
     tcker_info = get_tckerInfo_Obj(symbol)
@@ -47,9 +55,9 @@ def get_yf_float_shares(symbol):
 #==========================
 def get_yf_float_outstand_shares(symbol):
     tcker_info = get_tckerInfo_Obj(symbol)
-    tcker_outstand_shares = get_yf_outstand_shares_fromTckrObj(tcker_info)
-    tcker_float_shares = get_yf_float_shares_fromTckrObj(tcker_info)
-    return tcker_outstand_shares,tcker_float_shares
+    error_out_shre, tcker_outstand_shares = get_yf_outstand_shares_fromTckrObj(tcker_info)
+    error_flt_shre, tcker_float_shares = get_yf_float_shares_fromTckrObj(tcker_info)
+    return tcker_outstand_shares, tcker_float_shares, error_out_shre, error_flt_shre
 
 
 
