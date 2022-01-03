@@ -2,10 +2,14 @@ import streamlit as st
 import pandas as pd
 import datetime
 import get12Data as g12d
+from io import StringIO 
 
 # to run streamlit app
 # streamlit run ./files.py/streamlit-app.py
 
+# ====================
+# SETTINGS FUNCTIONS
+# ====================
 # set page config options
 st.set_page_config(page_title="Ticker Stream", 
                     page_icon=":stock_chart:", 
@@ -17,7 +21,21 @@ st.set_page_config(page_title="Ticker Stream",
          'About': "# This is a header. This is an *extremely* cool app!"
      }) #auto None
 
+# settings to remove top right hamburger menu
+st.markdown(""" <style>
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+</style> """, unsafe_allow_html=True)
 
+# settings to remove padding between components
+padding = 0
+st.markdown(f""" <style>
+    .reportview-container .main .block-container{{
+        padding-top: {padding}rem;
+        padding-right: {padding}rem;
+        padding-left: {padding}rem;
+        padding-bottom: {padding}rem;
+    }} </style> """, unsafe_allow_html=True)
 
 # ====================
 # HELPER FUNCTIONS
@@ -44,8 +62,6 @@ def sideBarcolorHeader(fontcolor = '#33ff33', fontsze = 30, msg="Enter some Text
 # ====================
 apikey1_12Data = "7940a5c7698545e98f6617f235dd1d5d"
 stocks_df = g12d.get_tck_stocks_df(apikey1_12Data)
-st.dataframe(stocks_df)
-
 
 # ====================
 # SIDE BAR AREA 
@@ -90,65 +106,71 @@ if inst_radio == "Stock Ticker":
         msg = 'TICKER SELECTION'
         sideBarcolorHeader(fontcolor = '#800080', fontsze = 14, msg = msg)
 
-        tcker_select_type_lst   = ["Single or Multiple Ticker(s) Symbols", "Filters", "(Incomplete)Ticker(s) Symbols from File"]
+        tcker_select_type_lst   = ["Load Ticker(s) Symbols from File", "Single or Multiple Ticker(s) Symbols"]
         tcker_select_type_radio = st.sidebar.radio("How do you want to select your Ticker", tcker_select_type_lst)
 
-        if (tcker_select_type_radio == "Single or Multiple Ticker(s) Symbols"):
-            tcker_symbol_lst = g12d.get_tcker_symbol_lst(stocks_df)
-            tckerlst_select = st.sidebar.multiselect('Type in the ticker here',  tcker_symbol_lst)
-        
-        elif (tcker_select_type_radio == "Filters"):
+        # this is not yet finished, needs a function for loading the list
+        if tcker_select_type_radio == "Load Ticker(s) Symbols from File":
+            st.sidebar.write(f"***Please Make sure file contents are comma delimited***") 
+            uploaded_file = st.sidebar.file_uploader("Choose a file for Ticker Symbol(s)")
+            if uploaded_file is not None:
+                # To read file as string:
+                stringio = StringIO(uploaded_file.getvalue().decode("utf-8"))
+                string_data = stringio.read()
+                tcker_lst = get_tcker_lst_fromStringIO(string_data)
+                    
+                illegal_tcker = list(set(tcker_lst) - set(stocks_df.symbol))
+                legal_tcker   = list(set(tcker_lst) - set(illegal_tcker))
+
+                if len(illegal_tcker) > 0:
+                    st.write(f"{len(illegal_tcker)} tickers do not exist in ticker list")
+                    st.markdown(illegal_tcker)
+                    st.markdown("---")
+                st.write(f"{len(legal_tcker)} tickers exist in ticker list")
+                st.markdown(legal_tcker)
+                st.markdown("---")
+
+                if len(legal_tcker) > 0:
+                    symbol_lst = legal_tcker
+                    #symbol_lst = g12d.get_tcker_symbol_lst(stocks_df)
+                    symbol_select = st.sidebar.multiselect('Symbol list from file will appear here', symbol_lst, symbol_lst )
+
+
+        elif (tcker_select_type_radio == "Single or Multiple Ticker(s) Symbols"):
+            #tcker_symbol_lst = g12d.get_tcker_symbol_lst(stocks_df)
+            #tckerlst_select = st.sidebar.multiselect('Type in the ticker here',  tcker_symbol_lst)
+
             symbol_lst = g12d.get_tcker_symbol_lst(stocks_df)
             symbol_select = st.sidebar.multiselect('Type in the ticker symbol here', options = symbol_lst)
 
-            type_lst = g12d.get_tcker_type_lst(stocks_df)
-            type_select = st.sidebar.multiselect('Type in the ticker type here', 
-                                                options = type_lst,
-                                                default = ["Common", "Common Stock", "EQUITY"])
-
-            country_lst = g12d.get_tcker_country_lst(stocks_df)
-            country_select = st.sidebar.multiselect('Type in the ticker country here', 
-                                                    options = country_lst,
-                                                    default = ["United States"])
-
-            exchange_lst = g12d.get_tcker_exchange_lst(stocks_df)
-            exchange_select = st.sidebar.multiselect('Type in the ticker exchange here',
-                                                    options = exchange_lst,
-                                                    default = ["NASDAQ"])
-
-            filter_submit = st.sidebar.button('Submit Filter Selection')
-            if filter_submit:
-                selection_df = g12d.filter_tcker(apikey_12Data, stocks_df, symbol_select, 
-                                            type_select, country_select, exchange_select)  
-
-
-                
-            
-
+            st.write(f"{len(symbol_lst)} tickers exist in ticker list")
+            st.markdown(symbol_lst)
+            st.markdown("---")
         
+        st.sidebar.markdown("---")
+        msg = 'FILTER SELECTION'
+        sideBarcolorHeader(fontcolor = '#800080', fontsze = 14, msg = msg)
+
+        type_lst = g12d.get_tcker_type_lst(stocks_df)
+        type_select = st.sidebar.multiselect('Type in the ticker type here', 
+                                            options = type_lst,
+                                            default = ["Common", "Common Stock", "EQUITY"])    
+
+        country_lst = g12d.get_tcker_country_lst(stocks_df)
+        country_select = st.sidebar.multiselect('Type in the ticker country here', 
+                                                options = country_lst,
+                                                default = ["United States"])
+        exchange_lst = g12d.get_tcker_exchange_lst(stocks_df)
+        exchange_select = st.sidebar.multiselect('Type in the ticker exchange here',
+                                                options = exchange_lst,
+                                                default = ["NASDAQ"])
         
-        elif tcker_select_type_radio == "(Incomplete)Ticker(s) Symbols from File":
-            uploaded_file = st.sidebar.file_uploader("Choose a file for Ticker Symbol(s)")
-          
-            if uploaded_file is not None:
-               
-                # To convert to a string based IO:
-                stringio = StringIO(uploaded_file.getvalue().decode("utf-8"))
-                st.write(stringio)          
-                
-                # To read file as string:
-                string_data = stringio.read()
-                st.write(string_data)           
-                
-                ## Can be used wherever a "file-like" object is accepted:
-                #dataframe = pd.read_csv(uploaded_file)
-                #st.write(dataframe)
-
-                ## To read file as bytes:
-                #bytes_data = uploaded_file.getvalue()
-                #st.write(bytes_data) 
-                # this needs to be worked on for logic accepting file details
-
+        filter_submit = st.sidebar.button('Submit Filter Selection')
+        if filter_submit:
+            df_filter = g12d.filter_tcker(apikey_12Data, stocks_df, symbol_select, 
+                                        type_select, country_select, exchange_select)  
+            st.write(f'{len(df_filter.index)} Nos. of Tickers Processed')
+            filter_dframe = st.dataframe(df_filter)
         
 
         st.sidebar.markdown("---")
