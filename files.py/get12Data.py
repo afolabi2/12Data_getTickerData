@@ -127,10 +127,7 @@ def filter_tcker_symbollist(symbol_lst):
 
 
 def filter_tcker(apikey_12Data, stocks_df, symbol_select, type_select, country_select, exchange_select):
-    print(f'symbol_select:{symbol_select}')
-    print(f'type_select:{type_select}')
-    print(f'country_select:{country_select}')
-    print(f'exchange_select:{exchange_select}')
+
     lstOfDf = []
     if len(symbol_select) != 0:
         cond_symbol = stocks_df["symbol"].isin(symbol_select)
