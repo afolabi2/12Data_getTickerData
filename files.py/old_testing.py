@@ -8,10 +8,10 @@ import getYfData as yfd
 
 print("starting")
 
-symbol = "AACOU"
-#symbol = "TSLA"
-x,y = yfd.get_yf_float_outstand_shares(symbol)
-print(x,y)
+#symbol = "AACOU"
+symbol = "TSLA"
+x,y,xa,ya = yfd.get_yf_float_outstand_shares(symbol)
+print(x,y,xa,ya)
 
 print("ending")
 

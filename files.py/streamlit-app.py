@@ -321,31 +321,28 @@ if inst_radio == "Stock Ticker":
     st.sidebar.markdown("---")
 
 
-
-
-
 use12Data_expander = st.expander(f"12Data Input for Time Series Computations")
 if st.sidebar.button('Submit'):
     st.session_state.toProcessInput = []  
-    mess = f'Instrument Type selected: **{inst_radio}**'
+    mess = f'Instrument Type selected: {inst_radio}'
     st.session_state.toProcessInput.append(mess) 
-    mess = f'Data Source selected: **{src_radio}**'
+    mess = f'Data Source selected: {src_radio}'
     st.session_state.toProcessInput.append(mess) 
-    mess = f'API Key to use: **{ApiKey_radio}**'
+    mess = f'API Key to use: {ApiKey_radio}'
     st.session_state.toProcessInput.append(mess) 
-    mess = f'Ticker Symbol(s) Selected: **{symbol_select}**'
+    mess = f'Ticker Symbol(s) Selected: {symbol_select}'
     st.session_state.toProcessInput.append(mess) 
-    mess = f'Time Interval to use: **{interval}**'
+    mess = f'Time Interval to use: {interval}'
     st.session_state.toProcessInput.append(mess) 
-    mess = f'Time Range to procure Data: **{getTmeRnge}**'
+    mess = f'Time Range to procure Data: {getTmeRnge}'
     st.session_state.toProcessInput.append(mess)
 
     with use12Data_expander:
         if len(st.session_state.toProcessInput) != 0:
             mess = f'Data to be passed on for Time Series Computations'
-            colorHeader(fontcolor = '#800080', fontsze = 18, msg = msg)
+            colorHeader(fontcolor = '#800080', fontsze = 20, msg = mess)
         for msg in st.session_state.toProcessInput:
-            colorHeader(fontcolor = '#800080', fontsze = 14, msg = msg)
+            colorHeader(fontcolor = '#00008B', fontsze = 12, msg = msg)
 else:
     pass
      #st.write('Goodbye')
