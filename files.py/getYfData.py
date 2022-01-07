@@ -59,6 +59,9 @@ def get_yf_float_shares(symbol):
 # GET BOTH FLOAT AND OUTSTANDING SHARES FUNCTION
 #==========================
 def get_yf_float_outstand_shares(symbol):
+    print("*" * 60)
+    print(f'{symbol} outstanding & float shares data extraction initialized')
+    print("*" * 60)
     tcker_info = get_tckerInfo_Obj(symbol)
     error_out_shre, tcker_outstand_shares = get_yf_outstand_shares_fromTckrObj(tcker_info)
     #print(f'outstanding shares error code: {error_out_shre}')
@@ -66,6 +69,7 @@ def get_yf_float_outstand_shares(symbol):
     error_flt_shre, tcker_float_shares = get_yf_float_shares_fromTckrObj(tcker_info)
     #print(f'float shares error code: {error_flt_shre}')
     #print(f'float shares value: {tcker_float_shares}')
+    print(f'data extraction completed for {symbol}')
     return tcker_outstand_shares, tcker_float_shares, error_out_shre, error_flt_shre
 
 

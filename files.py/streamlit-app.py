@@ -43,6 +43,7 @@ st.markdown(f""" <style>
 # HELPER FUNCTIONS
 # ====================
 #<font color=‘red’>THIS TEXT WILL BE RED</font>, unsafe_allow_html=True)
+
 def colorMarkDown(fontcolor = '#33ff33', fontsze = 24, msg="Enter some Text"):
     # will need color to color coding map. default color '#33ff33' is green
     st.markdown(f'<h1 style="color:{fontcolor};font-size:{fontsze}px;">{msg}</h1>', unsafe_allow_html=True)
@@ -59,6 +60,52 @@ def sideBarcolorHeader(fontcolor = '#33ff33', fontsze = 30, msg="Enter some Text
     # will need color to color coding map. default color '#33ff33' is green
     st.sidebar.markdown(f'<h1 style="color:{fontcolor};font-size:{fontsze}px;">{msg}</h1>', unsafe_allow_html=True)
 
+# ====================
+# PRINT OUT FUNCTIONS
+# ====================
+def filterPrint(symbol_select, type_select, country_select, exchange_select ):
+    #need to add hard limits to qty of tickers and date ranges here
+    df_filter, symb_error_out_shre_lst, symb_error_flt_shre_lst = g12d.filter_tcker(apikey_12Data, stocks_df, symbol_select, 
+                                        type_select, country_select, exchange_select)  
+    st.session_state.messages = []    
+    st.session_state.dataframe = [] 
+    mess = f'Nos. of Tickers Processed with filter criteria: **{len(df_filter.index)}**'
+    st.session_state.messages.append(mess)
+    
+    mess = f'Ticker Symbol(s) Selected: **{symbol_select}**'
+    st.session_state.messages.append(mess)
+    mess = f'     Ticker Type Selected: **{type_select}**'
+    st.session_state.messages.append(mess)
+    mess = f'         Country Selected: **{country_select}**'
+    st.session_state.messages.append(mess)
+    mess = f'          Exchange Select: **{exchange_select}**'
+    st.session_state.messages.append(mess)            
+    
+    if len(symb_error_out_shre_lst) > 0:
+        mess = f'data unavailable for {len(symb_error_out_shre_lst)} Nos. of Tickers'
+        st.session_state.messages.append(mess)
+        mess = symb_error_out_shre_lst
+        st.session_state.messages.append(mess)
+    if len(symb_error_flt_shre_lst) > 0:
+        mess = f'data unavailable for {len(symb_error_flt_shre_lst)} Nos. of Tickers'
+        st.session_state.messages.append(mess)
+        mess = symb_error_flt_shre_lst
+        st.session_state.messages.append(mess)
+    st.session_state.dataframe.append(df_filter)
+
+    with get12Data_expander:
+        for msg in st.session_state.messages:
+            st.markdown(msg)
+        if "dataframe" in st.session_state: 
+            msg = 'DataFrame for Filtered Ticker List'
+            colorHeader(fontcolor = '#800080', fontsze = 18, msg = msg)
+        for dataframe in st.session_state.dataframe:
+            st.dataframe(dataframe)
+    
+    return df_filter, symb_error_out_shre_lst, symb_error_flt_shre_lst
+
+
+
 
 # ====================
 # DATAFRAME FORMATTING 
@@ -70,12 +117,12 @@ pd.options.display.float_format = '{:,}'.format
 # API CALLS 
 # ====================
 @st.cache
-def initialiseTickerLst(apikey1_12Data):
-    stocks_df = g12d.get_tck_stocks_df(apikey1_12Data)
+def initialiseTickerLst(apikey_12Data):
+    stocks_df = g12d.get_tck_stocks_df(apikey_12Data)
     return stocks_df
 
-apikey1_12Data = "7940a5c7698545e98f6617f235dd1d5d"
-stocks_df = initialiseTickerLst(apikey1_12Data)
+apikey_12Data = "7940a5c7698545e98f6617f235dd1d5d"
+stocks_df = initialiseTickerLst(apikey_12Data)
 total_rows_unfiltered_tickername_12Data = len(stocks_df)
 get12Data_expander = st.expander(f"12Data OutPut")
 with get12Data_expander:
@@ -123,7 +170,6 @@ if inst_radio == "Stock Ticker":
    
         if ApiKey_radio == "Default":
             st.sidebar.write(f'**{ApiKey_radio} 12Data API Key will be used**')
-            apikey_12Data = "7940a5c7698545e98f6617f235dd1d5d"
         elif ApiKey_radio == "Enter API Key":
             apikey_12Data = st.sidebar.text_input('Please Enter 12 Data API Key', 'Please Enter 12 Data API Key')
         st.sidebar.markdown("---")
@@ -133,7 +179,6 @@ if inst_radio == "Stock Ticker":
 
         tcker_select_type_lst   = ["Single or Multiple Ticker(s) Symbols", "Load Ticker(s) Symbols from File"]
         tcker_select_type_radio = st.sidebar.radio("How do you want to select your Ticker", tcker_select_type_lst)
-
         
         if tcker_select_type_radio == "Load Ticker(s) Symbols from File":
             symbol_select = []
@@ -150,7 +195,6 @@ if inst_radio == "Stock Ticker":
 
                 if len(legal_tcker) > 0:
                     symbol_lst = legal_tcker
-                    #symbol_lst = g12d.get_tcker_symbol_lst(stocks_df)
                     symbol_select = st.sidebar.multiselect('Symbol list from file will appear here', symbol_lst, symbol_lst )
 
                 if len(illegal_tcker) > 0:
@@ -158,13 +202,11 @@ if inst_radio == "Stock Ticker":
                         st.markdown(f"Nos. of Illegal tickers: **{len(illegal_tcker)}**")
                         st.markdown(f'Ticker List: **{illegal_tcker}**')
                         st.markdown("---")
-                with get12Data_expander:
-                    st.markdown(f"Nos. of Legal tickers: **{len(legal_tcker)}**")
-                    st.markdown(f'Ticker List: **{legal_tcker}**')
-                    st.markdown("---") 
-
-
-
+                if len(legal_tcker) > 0:
+                    with get12Data_expander:
+                        st.markdown(f"Nos. of Legal tickers: **{len(legal_tcker)}**")
+                        st.markdown(f'Ticker List: **{legal_tcker}**')
+                        st.markdown("---") 
 
         elif (tcker_select_type_radio == "Single or Multiple Ticker(s) Symbols"):
             symbol_lst = g12d.get_tcker_symbol_lst(stocks_df)
@@ -193,62 +235,12 @@ if inst_radio == "Stock Ticker":
                                                 options = exchange_lst,
                                                 default = ["NASDAQ"])
         
+        
+        
         filter_submit = st.sidebar.button('Submit Filter Selection')
         if filter_submit:
-            st.session_state.messages = []    
-            st.session_state.dataframe = []  
-
-            df_filter, symb_error_out_shre_lst, symb_error_flt_shre_lst = g12d.filter_tcker(apikey_12Data, stocks_df, symbol_select, 
-                                        type_select, country_select, exchange_select)  
-
-            #msg = 'Filter Criteria'
-            #colorHeader(fontcolor = '#800080', fontsze = 18, msg = msg)
-            #st.markdown(f'Nos. of Tickers Processed with filter criteria: **{len(df_filter.index)}**')
-            mess = f'Nos. of Tickers Processed with filter criteria: **{len(df_filter.index)}**'
-            st.session_state.messages.append(mess)
-            
-            #st.markdown(f'Ticker Symbol(s) Selected: **{symbol_select}**')
-            mess = f'Ticker Symbol(s) Selected: **{symbol_select}**'
-            st.session_state.messages.append(mess)
-            #st.markdown(f'     Ticker Type Selected: **{type_select}**')
-            mess = f'     Ticker Type Selected: **{type_select}**'
-            st.session_state.messages.append(mess)
-            #st.markdown(f'         Country Selected: **{country_select}**')
-            mess = f'         Country Selected: **{country_select}**'
-            st.session_state.messages.append(mess)
-            #st.markdown(f'          Exchange Select: **{exchange_select}**')    
-            mess = f'          Exchange Select: **{exchange_select}**'
-            st.session_state.messages.append(mess)            
-            
-            if len(symb_error_out_shre_lst) > 0:
-                #st.write(f'data unavailable for {len(symb_error_out_shre_lst)} Nos. of Tickers')
-                mess = f'data unavailable for {len(symb_error_out_shre_lst)} Nos. of Tickers'
-                st.session_state.messages.append(mess) 
-                #st.markdown(symb_error_out_shre_lst)
-                mess = symb_error_out_shre_lst
-                st.session_state.messages.append(mess)
-            if len(symb_error_flt_shre_lst) > 0:
-                #st.write(f'data unavailable for {len(symb_error_flt_shre_lst)} Nos. of Tickers')
-                mess = f'data unavailable for {len(symb_error_flt_shre_lst)} Nos. of Tickers'
-                st.session_state.messages.append(mess)
-                #st.markdown(symb_error_flt_shre_lst)
-                mess = symb_error_flt_shre_lst
-                st.session_state.messages.append(mess)
-            #msg = 'DataFrame for Filtered Ticker List'
-            #colorHeader(fontcolor = '#800080', fontsze = 18, msg = msg)
-            #filter_dframe = st.dataframe(df_filter)
-            st.session_state.dataframe.append(df_filter)
-        
-        with get12Data_expander:
-            for msg in st.session_state.messages:
-                st.markdown(msg)
-            if "dataframe" in st.session_state: 
-                msg = 'DataFrame for Filtered Ticker List'
-                colorHeader(fontcolor = '#800080', fontsze = 18, msg = msg)
-            for dataframe in st.session_state.dataframe:
-                st.dataframe(dataframe)
-
-        st.sidebar.markdown("---")
+            df_filter, symb_error_out_shre_lst, symb_error_flt_shre_lst = filterPrint(symbol_select, type_select, country_select, exchange_select )
+            st.sidebar.markdown("---")
 
         msg = 'STOCK INTERVAL SELECTION'
         sideBarcolorHeader(fontcolor = '#800080', fontsze = 14, msg = msg)
@@ -282,10 +274,10 @@ if inst_radio == "Stock Ticker":
             start_date_input = st.sidebar.date_input("Select Start Date", datetime.date.today())
             st.sidebar.write('Start Date is:', start_date_input)
         elif startTimeRangeOption ==  "Today's Date":
-            st.sidebar.write('Start Date is:', datetime.date.today())
-        else:
+            today_date_input = datetime.date.today()
+            st.sidebar.write('Start Date is:', today_date_input)
+        elif startTimeRangeOption ==  "earliestTimeStamp":
             st.sidebar.write(f'We will Calculate Start Date from {startTimeRangeOption}')
-        
         st.sidebar.markdown("---")
 
         msg = 'TIME RANGE SELECTION: END DATE'
@@ -300,7 +292,7 @@ if inst_radio == "Stock Ticker":
         #elif startTimeRangeOption == 'Time Interval':
         #    EndTimeRngeTuple = ('earliestTimeStamp', 'user provided StartDate', 'user provided EndDate', "Today's Date")
         elif startTimeRangeOption == "Today's Date":
-            EndTimeRngeTuple = ("Time Interval")
+            EndTimeRngeTuple = ("Time Interval",  "Today's Date")
             
         endTimeRangeOption = st.sidebar.selectbox('Please select type of End Date', EndTimeRngeTuple )
 
@@ -311,8 +303,8 @@ if inst_radio == "Stock Ticker":
         elif endTimeRangeOption ==  "Today's Date":
             st.sidebar.write('End Date is:', datetime.date.today())
         elif endTimeRangeOption ==  "Time Interval":
-            timeIntervalUnit = st.sidebar.selectbox('Please select Time Interval Unit?',('seconds', 'minutes', 'hours', 'days', 'weaks', 'months', 'years'))
-            timeIntervalValue = st.sidebar.number_input('Insert a Time Interval Value')
+            timeIntervalUnit = st.sidebar.selectbox('Please select Time Interval Unit?',('seconds', 'minutes', 'hours', 'days', 'weeks', 'months', 'years'))
+            timeIntervalValue = st.sidebar.number_input('Insert a Time Interval Value', min_value = 1)
             st.sidebar.write(f'Selected Time Interval is {timeIntervalValue} {timeIntervalUnit}')
         else:
             st.sidebar.write(f'We will Calculate End Date from {endTimeRangeOption}')
@@ -320,70 +312,87 @@ if inst_radio == "Stock Ticker":
         getTmeRnge = f'{startTimeRangeOption}-{endTimeRangeOption}'
     st.sidebar.markdown("---")
 
-
+# ====================
+# MAIN AREA 
+# ====================
 use12Data_expander = st.expander(f"12Data Input for Time Series Computations")
-if st.sidebar.button('Submit'):
-    st.session_state.toProcessInput = []  
-    mess = f'Instrument Type selected: {inst_radio}'
-    st.session_state.toProcessInput.append(mess) 
-    mess = f'Data Source selected: {src_radio}'
-    st.session_state.toProcessInput.append(mess) 
-    mess = f'API Key to use: {ApiKey_radio}'
-    st.session_state.toProcessInput.append(mess) 
-    mess = f'Ticker Symbol(s) Selected: {symbol_select}'
-    st.session_state.toProcessInput.append(mess) 
-    mess = f'Time Interval to use: {interval}'
-    st.session_state.toProcessInput.append(mess) 
-    mess = f'Time Range to procure Data: {getTmeRnge}'
-    st.session_state.toProcessInput.append(mess)
 
-    with use12Data_expander:
-        if len(st.session_state.toProcessInput) != 0:
-            mess = f'Data to be passed on for Time Series Computations'
-            colorHeader(fontcolor = '#800080', fontsze = 20, msg = mess)
-        for msg in st.session_state.toProcessInput:
-            colorHeader(fontcolor = '#00008B', fontsze = 12, msg = msg)
+if st.sidebar.button('Submit'):
+    #need to add hard limits to qty of tickers and date ranges here
+    if not filter_submit:
+        print("this is some bullshit")
+        df_filter, symb_error_out_shre_lst, symb_error_flt_shre_lst = filterPrint(symbol_select, type_select, country_select, exchange_select )
+    
+    if len(symbol_select) == 0:
+                st.warning('Please populate ticker symbol')
+    else:
+        st.session_state.toProcessInput = []  
+        mess = f'Instrument Type selected: {inst_radio}'
+        st.session_state.toProcessInput.append(mess) 
+        mess = f'Data Source selected: {src_radio}'
+        st.session_state.toProcessInput.append(mess) 
+        mess = f'API Key to use: {ApiKey_radio}'
+        st.session_state.toProcessInput.append(mess) 
+        mess = f'Ticker Symbol(s) Selected: {symbol_select}'
+        st.session_state.toProcessInput.append(mess) 
+        mess = f'Time Interval to use: {interval}'
+        st.session_state.toProcessInput.append(mess) 
+        mess = f'Time Range to procure Data: {getTmeRnge}'
+        st.session_state.toProcessInput.append(mess)
+
+        mess = f'Time Range Start type is: {startTimeRangeOption}'
+        st.session_state.toProcessInput.append(mess)
+        mess = f'Time Range End Type is: {endTimeRangeOption}'
+        st.session_state.toProcessInput.append(mess)
+        mess = f'---'
+        st.session_state.toProcessInput.append(mess)
+
+        for symbol in symbol_select:
+            if startTimeRangeOption == 'earliestTimeStamp':
+                date = g12d.getTickerEarliesrTimeStamp(apikey_12Data, symbol, interval)
+                mess = f'earliestTimeStamp for {symbol}: {date}'
+                st.session_state.toProcessInput.append(mess)
+                final_start_date = date['datetime_data']
+            if startTimeRangeOption == 'user provided StartDate':
+                mess = f'user provided StartDate input: {start_date_input}'
+                st.session_state.toProcessInput.append(mess) 
+                final_start_date = start_date_input
+            if startTimeRangeOption == "Today's Date":
+                mess = f'Todays Date input: {today_date_input}'
+                st.session_state.toProcessInput.append(mess) 
+                final_start_date = today_date_input
+
+
+            if endTimeRangeOption == 'user provided EndDate':
+                mess = f'user provided EndDate input: {end_date_input}'
+                st.session_state.toProcessInput.append(mess)
+                final_end_date = end_date_input    
+            if endTimeRangeOption == "Time Interval":
+                mess = f'Time Interval Value is: {timeIntervalValue} {timeIntervalUnit}'
+                st.session_state.toProcessInput.append(mess) 
+                final_end_date = g12d.addRelTimeDelta(final_start_date, timeIntervalValue, timeIntervalUnit)
+            if endTimeRangeOption == "Today's Date":
+                mess = f'Todays Date input: {today_date_input}'
+                st.session_state.toProcessInput.append(mess) 
+                final_end_date = today_date_input
+            mess = f'Time Series Computations Date Range| Start Date: {final_start_date} | End Date: {final_end_date}  '
+            st.session_state.toProcessInput.append(mess) 
+            mess = f'---'
+            st.session_state.toProcessInput.append(mess)
+
+        with use12Data_expander:
+            if len(st.session_state.toProcessInput) != 0:
+                mess = f'Data to be passed on for Time Series Computations'
+                colorHeader(fontcolor = '#800080', fontsze = 20, msg = mess)
+            for msg in st.session_state.toProcessInput:
+                colorHeader(fontcolor = '#00008B', fontsze = 12, msg = msg)
+            
 else:
     pass
      #st.write('Goodbye')
 
 
-## ====================
-## MAIN AREA 
-## ====================
-##Text Title
-#author = 'akt'
-#version = '0.001'
-#title_01 = f'Pull Stock Data App(Streamlit)'
-#st.title(title_01)
-#
-##Text Header/SubHeader
-#header_01    = f'by {author}'
-#subheader_01 = f'@version{version}'
-#st.header(header_01)
-#st.subheader(subheader_01)
-#
-#st.markdown("---")
-#msg = 'INSTRUCTIONS/NOTES'
-#colorHeader(fontcolor = '#02075d', msg = msg)
-#st.markdown('**to run streamlit app**')
-#code_01 = '''streamlit run ./files.py/app.py'''
-#st.code(code_01, language='python')
-## streamlit run ./files.py/app.py
-#
-#st.markdown("---")
-#msg = 'WAITING TASKS'
-#colorHeader(fontcolor = '#02075d', msg = msg)
-#msg = '> 1. Make Ticker Symbol  listing faster'
-#colorMarkDown(fontcolor = '#FF0000', fontsze = 14, msg=msg)
-#msg = '> 2. Remove Streamlit Footer,Icon, Menues, configure theme'
-#colorMarkDown(fontcolor = '#FF0000', fontsze = 14, msg=msg)
-#msg = '> 3. Do we need additional filters for ticker symbols'
-#colorMarkDown(fontcolor = '#FF0000', fontsze = 14, msg=msg)
-#msg = '> 4. Add button for clear values besides submit'
-#colorMarkDown(fontcolor = '#FF0000', fontsze = 14, msg=msg)
-#
-#st.markdown("---")
+
 
 
 

@@ -10,11 +10,13 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 import calendar
 from datetime import datetime
+from dateutil.relativedelta import relativedelta, MO
 from datetime import timedelta
 from datetime import date
 import time
 from time import sleep
 import math
+import streamlit as st
 # **********************************************
 # waiting tasks
 # **********************************************
@@ -150,6 +152,36 @@ def addTimeDelta(date_str, timeRangeinMinutes):
     date = date + time_delta
     date_str = date.strftime.strftime('%Y-%m-%d' '%H:%M:%S')
     return date_str, date
+
+# function adds atime interval to a date using relative time delta calculations
+def addRelTimeDelta(date, timeIntervalValue, timeIntervalUnit):
+    errorcode = 0
+    if timeIntervalUnit == "seconds":
+        rel_delta = relativedelta(seconds=timeIntervalValue)
+    elif timeIntervalUnit == "minutes":
+        rel_delta = relativedelta(minutes=timeIntervalValue)
+    elif timeIntervalUnit == "hours":
+        rel_delta = relativedelta(hours=timeIntervalValue)
+    elif timeIntervalUnit == "days":
+        rel_delta = relativedelta(days=timeIntervalValue)
+    elif timeIntervalUnit == "weeks":
+        rel_delta = relativedelta(weeks=timeIntervalValue)
+    elif timeIntervalUnit == "months":
+        rel_delta = relativedelta(months=timeIntervalValue)
+    elif timeIntervalUnit == "years":
+        rel_delta = relativedelta(years=timeIntervalValue)
+    else:
+        errorcode = 1
+    
+    datetime_object = datetime.strptime(date,  '%Y-%m-%d')
+    datetime_object += rel_delta
+    new_date = datetime_object.strftime('%Y-%m-%d')
+    return new_date
+
+
+
+
+
 
 # function returns todays date
 def getTodaysDate():

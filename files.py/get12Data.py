@@ -3,9 +3,10 @@ import pandas as pd
 import numpy as np
 import pathlib
 import streamlit as st
-from time import sleep
 import getYfData as yfd
-
+from time import sleep
+from datetime import datetime
+from dateutil.relativedelta import relativedelta, MO
 
 # ====================
 # HELPER FUNCTIONS
@@ -216,3 +217,52 @@ def get_tcker_lst_fromStringIO(string_data):
                 if tckers != "":
                     tcker_lst.append(tckers)
     return tcker_lst
+
+
+# def function to get earliest timestamp for each stock ticker
+def getTickerEarliesrTimeStamp(twelvedata_api_key, ticker, interval):
+    data_types = ["earliest_timestamp"]
+    #twelvedata_url = f'https://api.twelvedata.com/{data_types}?symbol={ticker}&interval=1day&apikey={twelvedata_api_key}'
+    twelvedata_url =  f'https://api.twelvedata.com/earliest_timestamp?symbol={ticker}&interval=1day&apikey={twelvedata_api_key}'
+    json_object = requests.get(twelvedata_url).json()
+    
+    #session = requests.Session()
+    ## In case I run into issues, retry my connection
+    #retries = Retry(total=5, backoff_factor=0.1, status_forcelist=[ 500, 502, 503, 504 ])
+    #session.mount('http://', HTTPAdapter(max_retries=retries))
+    ## Initial request to get the ticker count
+    #r = session.get(twelvedata_url)
+    #json_object = r.json()
+
+    datetime_data = json_object['datetime']
+    unix_time_data = json_object['unix_time']
+    mydict = {}
+    mydict['datetime_data'] = datetime_data
+    mydict['unix_time_data'] = unix_time_data
+    return mydict
+
+# function adds atime interval to a date using relative time delta calculations
+def addRelTimeDelta(date, timeIntervalValue, timeIntervalUnit):
+    errorcode = 0
+    if timeIntervalUnit == "seconds":
+        rel_delta = relativedelta(seconds=timeIntervalValue)
+    elif timeIntervalUnit == "minutes":
+        rel_delta = relativedelta(minutes=timeIntervalValue)
+    elif timeIntervalUnit == "hours":
+        rel_delta = relativedelta(hours=timeIntervalValue)
+    elif timeIntervalUnit == "days":
+        rel_delta = relativedelta(days=timeIntervalValue)
+    elif timeIntervalUnit == "weeks":
+        rel_delta = relativedelta(weeks=timeIntervalValue)
+    elif timeIntervalUnit == "months":
+        rel_delta = relativedelta(months=timeIntervalValue)
+    elif timeIntervalUnit == "years":
+        rel_delta = relativedelta(years=timeIntervalValue)
+    else:
+        errorcode = 1
+    
+    datetime_object = datetime.strptime(date,  '%Y-%m-%d')
+    datetime_object += rel_delta
+    return datetime_object
+    #new_date = datetime_object.strftime('%Y-%m-%d')
+    #return new_date
