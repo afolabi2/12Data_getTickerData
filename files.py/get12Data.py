@@ -6,7 +6,50 @@ import streamlit as st
 import getYfData as yfd
 from time import sleep
 from datetime import datetime
+from datetime import timedelta
 from dateutil.relativedelta import relativedelta, MO
+import math
+
+
+# ====================
+# DATACLASS FUNCTIONS
+# ====================
+@dataclass # data class to hold single ticker dataclass object
+class singleTickerData(object):
+    ticker: str
+    interval: str
+    start_date: str
+    earliestdatetime: str
+    earliestUnix_time: str
+    df_tsMeta : pd.core.frame.DataFrame
+    df_tsData : pd.core.frame.DataFrame
+    df_tsError : pd.core.frame.DataFrame
+    df_dvMeta : pd.core.frame.DataFrame
+    df_dvData : pd.core.frame.DataFrame
+    df_dvError : pd.core.frame.DataFrame
+    df_spMeta : pd.core.frame.DataFrame
+    df_spData : pd.core.frame.DataFrame
+    df_spError : pd.core.frame.DataFrame
+
+@dataclass # data class to hold list of ticker dataclass object
+class multiTickerData(object):
+    listTickerDClass: list
+    def populatelist(dcItem):
+        listTickerDClass.append(dcItem)
+
+@dataclass # data class to hold input values for each ticker - mostly useless might remove it
+class singleTickerInput(object):
+    # api keys
+    #alpha_vantage_api_key : str = "FYQD4Z70A1KX5QI9"
+    twelvedata_api_key: str = "7940a5c7698545e98f6617f235dd1d5d"
+    ticker: str = "AAPL"
+    interval: str = "1min"
+    start_date: str = "2016-01-20"
+    end_date: str = ""
+    earliestDateTime_data: str = ""
+    earliestUnixTime_data: str = ""
+    timezone: str = ""   
+
 
 # ====================
 # HELPER FUNCTIONS
@@ -263,6 +306,233 @@ def addRelTimeDelta(date, timeIntervalValue, timeIntervalUnit):
     
     datetime_object = datetime.strptime(date,  '%Y-%m-%d')
     datetime_object += rel_delta
-    return datetime_object
-    #new_date = datetime_object.strftime('%Y-%m-%d')
-    #return new_date
+    #return datetime_object
+    new_date = datetime_object.strftime('%Y-%m-%d')
+    return new_date
+
+""" # returns list of calculated start/end time/date that program will run to get complete range of data: 
+    use this to circumspect the 5000entries limit per api call
+    """
+def getStartStopRngeLst(symbol, interval, start_date, end_date): 
+    #required data
+    maxRequestPerDay_freekey = 800
+    maxNosDataPts   = 5000
+    useNosDataPts   = 4500
+
+
+    interval_lst         = ['1min', '5min', '15min', '30min', '45min', '1h', '2h', '4h', '1day', '1week', '1month']
+    intervalQty_lst     = [1     ,  5    ,  15    ,  30    ,  45    ,  60 ,  120, 240 ,  1440 ,  10080 ,  44640]
+    
+    # turn string dates to datetime objects
+    if len(start_date) == 10:
+        start_date = f'{start_date} 00:00:00'
+    if len(end_date) == 10:
+        end_date = f'{end_date} 00:00:00'
+    parsed_start = datetime.strptime(start_date, "%Y-%m-%d %H:%M:%S")
+    parsed_end = datetime.strptime(end_date, "%Y-%m-%d %H:%M:%S")
+
+    #get difference between start and end dates
+    timedelta_raw = parsed_end - parsed_start
+    timedeltaInSeconds_int = timedelta_raw.total_seconds()
+    timedeltaInMinutes_int = timedeltaInSeconds_int / 60
+
+    # dictionary of mins/bar mapped against interval ie 5mins:5
+    interval_intervalQty_dict = {interval_lst[i]: intervalQty_lst[i] for i in range(len(interval_lst))}
+    intervalInMinutes = interval_intervalQty_dict[interval]
+
+    #Time Range covered by useNosDataPts and Chart Interval in ints
+    use_Rnge_per_Request_int = intervalInMinutes * useNosDataPts
+    max_Rnge_per_Request_int = intervalInMinutes * maxNosDataPts
+
+    #Time Range covered by useNosDataPts and Chart Interval in timedelta's
+    use_Rnge_per_Request_datetime = timedelta(seconds = use_Rnge_per_Request_int * 60)
+    max_Rnge_per_Request_datetime = timedelta(seconds = max_Rnge_per_Request_int * 60)
+
+    #Nos of Requests to make
+    useNosOfRequests = timedeltaInMinutes_int / use_Rnge_per_Request_int
+    minNosOfRequests = timedeltaInMinutes_int / max_Rnge_per_Request_int
+    
+
+    useNosOfRequests = math.ceil(useNosOfRequests)
+    minNosOfRequests = math.ceil(minNosOfRequests)
+    
+    #we need to check that useNosOfRequests, minNosOfRequests are less than maxRequestPerDay_freekey
+    #not done yet
+
+    # we are creating lists of start date/enddate/time interval
+    symbol_namn_lst = []
+    start_time_lst = []
+    end_time_lst = []
+    interval_lst = []
+    data_pts_lst = []
+    chartRnge_lst = [] 
+    for nos in range(useNosOfRequests):
+        # populate entries
+        if nos == 0:
+            start_time_entry = parsed_start
+        else:
+            start_time_entry = end_time_lst[nos - 1]
+        end_time_entry   = start_time_entry + use_Rnge_per_Request_datetime  #can switch to max_Rnge_per_Request_int instead of use_Rnge_per_Request_int
+        interval_entry   = intervalInMinutes
+        data_pts_entry    = useNosDataPts
+        ChartRnge_entry  = use_Rnge_per_Request_int                                         #can switch to max_Rnge_per_Request_int instead of use_Rnge_per_Request_int
+        
+        #populate lists
+        start_time_lst.append(start_time_entry)
+        end_time_lst.append(end_time_entry)
+        interval_lst.append(interval_entry)
+        data_pts_lst.append(data_pts_entry)
+        chartRnge_lst.append(ChartRnge_entry)
+        symbol_namn_lst.append(symbol)
+
+    # lets create dataframe from lists created above
+    chartTSInput_dict = {"symbol": symbol_namn_lst, "start_time": start_time_lst, "end_time": end_time_lst, "interval": interval_lst, 
+                        "data_pts": data_pts_lst, "chart_Rnge": chartRnge_lst }
+    chartTSInput_df = pd.DataFrame(chartTSInput_dict)
+    print(chartTSInput_df.head(3))
+    print(chartTSInput_df.tail(3))
+    return chartTSInput_df
+
+
+
+
+
+    #return useNosOfRequests,use1,use2
+    
+    
+    
+    # # this is nos of bars within timedeltaInMinutes_int
+    # nosBars_lst   = [math.floor((timedeltaInMinutes_int ) / x) for x in intervalQty_lst] 
+    # 
+    # # dictionary of (nos of bar)/timedeltaInMinutes_int mapped against interval
+    # interval_nosBars_dict = {interval_lst[i]: nosBars_lst[i] for i in range(len(interval_lst))}
+    # 
+    # minsPerBar = interval_intervalQty_dict[f'{interval}']
+    # nosBars = interval_nosBars_dict[f'{interval}']
+    # 
+    # print(f'total bars: {nosBars} | minutes per bar: {minsPerBar} | total bars * minutes per bar: {nosBars * minsPerBar} | input qty of time: {timedeltaInMinutes_int}')
+    # 
+    # # get nos of loop
+    # loop = math.ceil(nosBars / max_outputsze)
+    # remnant = nosBars - (max_outputsze * loop)
+    # print(f'loop: {loop}| remnant: {remnant}')
+
+# WORK IN PROGRESS!!!!!!! function to get time series for each row of a symbol df in a list of symbols
+def getAllSymbolTimeSeries_dfs(allSymb_startEnd_lst):
+    for symbol_df in allSymb_startEnd_lst:
+        for indx in symbol_df:
+            ticker = df['symbol'][indx]
+            start_time = df['start_time'][indx]
+            end_time = df['end_time'][indx]
+            interval = df['interval'][indx]
+            data_pts = df['data_pts'][indx]
+            #plug data to produce a json
+            dc_symbol = get_TimeSeries_12Data(twelvedata_api_key, ticker, interval, start_date, earliestDateTime_data, earliestUnixTime_data)
+                #if we dont get desired json files after checks, it should add an error column and error in indx position
+                #we need to concatenate all single row entries from each symbol_df and check for duplicate values
+
+
+# get stock ticker time series data
+def get_TimeSeries_12Data(twelvedata_api_key, ticker, interval, start_date, earliestDateTime_data, earliestUnixTime_data): #do i need to add timezone?
+    # TwelveData Work
+    data_types = ["time_series"]
+    value_type = ["values"]
+
+    counter = 0
+    # initialise empty dataframes
+    tsMeta_df = pd.DataFrame()
+    tsData_df = pd.DataFrame()
+    tsError_df = pd.DataFrame()
+ 
+    for data_type in data_types:
+        # time series data - adjusted close price
+        # ref: https://support.twelvedata.com/en/articles/5179064-are-the-prices-adjusted
+        twelvedata_url = f"https://api.twelvedata.com/{data_type}?symbol={ticker}&interval={interval}&start_date={start_date}&apikey={twelvedata_api_key}"
+        #json_object = requests.get(twelvedata_url).json()
+        
+        session = requests.Session()
+        # In case I run into issues, retry my connection
+        retries = Retry(total=5, backoff_factor=0.1, status_forcelist=[ 500, 502, 503, 504 ])
+        session.mount('http://', HTTPAdapter(max_retries=retries))
+        # Initial request to get the ticker count
+        r = session.get(twelvedata_url)
+        json_object = r.json()
+        
+        if ('status' in json_object):
+            status_exist = True
+        else:
+            status_exist = False
+        
+        if (status_exist == True):
+            status_data = json_object['status']
+
+            if status_data == 'ok':
+                meta_data = json_object['meta']
+                meta_df = pd.DataFrame(meta_data, index=[0]) # will add start and end dates to meta_df
+
+                value_data = json_object[f'{value_type[counter]}']
+                value_df = pd.DataFrame(value_data) # will add start and end dates to meta_df
+
+                if data_type == "time_series":
+                    tsMeta_df = meta_df
+                    tsData_df = value_df
+
+            elif status_data == 'error':
+                code_data = json_object['code']
+                mess_data = json_object['message']
+               
+
+                error_data = json_object
+                error_df = pd.DataFrame(json_object, index=[0]) 
+
+                if data_type == "time_series":
+                    tsError_df = error_df
+
+        elif (status_exist == False):
+            meta_data = json_object['meta']
+            meta_df = pd.DataFrame(meta_data, index=[0]) # will add start and end dates to meta_df
+
+            value_data = json_object[f'{value_type[counter]}']
+            value_df = pd.DataFrame(value_data) 
+
+            if data_type == "time_series":
+                tsMeta_df = meta_df
+                tsData_df = value_df
+
+        counter += 1
+        ticker_dc = singleTickerData(ticker=ticker, 
+                                    interval=interval,
+                                    start_date=start_date,
+                                    earliestdatetime=earliestDateTime_data,
+                                    earliestUnix_time=earliestUnixTime_data,
+                                    df_tsMeta=tsMeta_df, 
+                                    df_tsData=tsData_df,
+                                    df_tsError=tsError_df, 
+                                    df_dvMeta=dvMeta_df,
+                                    df_dvData=dvData_df,
+                                    df_dvError=dvError_df,
+                                    df_spMeta=spMeta_df,
+                                    df_spData=spData_df,
+                                    df_spError=spError_df
+                                                ) 
+    # check ticker_dc contents
+    print("=" * 80)
+    print(f'ticker check for {ticker_dc.ticker}')
+    print(f'ticker interval is {ticker_dc.interval}')
+    print(f'ticker stock data from date {ticker_dc.start_date}')
+    print(f'Earliest Date-time for {ticker_dc.ticker} is {ticker_dc.earliestdatetime}')
+    print(f'Earliest Unix-time for {ticker_dc.ticker} is {ticker_dc.earliestUnix_time}')
+    print(f'column qty of df_tsMeta is {len(ticker_dc.df_tsMeta.index)}') 
+    print(f'column qty of df_tsData is {len(ticker_dc.df_tsData.index)}') 
+    print(f'column qty of df_tsError is {len(ticker_dc.df_tsError.index)}') 
+    print(f'column qty of df_dvMeta is {len(ticker_dc.df_dvMeta.index)}') 
+    print(f'column qty of df_dvData is {len(ticker_dc.df_dvData.index)}') 
+    print(f'column qty of df_dvError is {len(ticker_dc.df_dvError.index)}') 
+    print(f'column qty of df_spMeta is {len(ticker_dc.df_spMeta.index)}') 
+    print(f'column qty of df_spData is {len(ticker_dc.df_spData.index)}')   
+    print(f'column qty of df_spError is {len(ticker_dc.df_spError.index)}')    
+    print("=" * 80)                                   
+    return ticker_dc
+
+
+

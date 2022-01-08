@@ -124,7 +124,7 @@ def initialiseTickerLst(apikey_12Data):
 apikey_12Data = "7940a5c7698545e98f6617f235dd1d5d"
 stocks_df = initialiseTickerLst(apikey_12Data)
 total_rows_unfiltered_tickername_12Data = len(stocks_df)
-get12Data_expander = st.expander(f"12Data OutPut")
+get12Data_expander = st.expander(f"12Data OutPut: TickerList+Outstanding Shares+FloatShares")
 with get12Data_expander:
     msg = 'Tickers Available from 12Data'
     colorHeader(fontcolor = '#800080', fontsze = 18, msg = msg)
@@ -274,7 +274,7 @@ if inst_radio == "Stock Ticker":
             start_date_input = st.sidebar.date_input("Select Start Date", datetime.date.today())
             st.sidebar.write('Start Date is:', start_date_input)
         elif startTimeRangeOption ==  "Today's Date":
-            today_date_input = datetime.date.today()
+            today_date_input = datetime.date.now()
             st.sidebar.write('Start Date is:', today_date_input)
         elif startTimeRangeOption ==  "earliestTimeStamp":
             st.sidebar.write(f'We will Calculate Start Date from {startTimeRangeOption}')
@@ -347,38 +347,40 @@ if st.sidebar.button('Submit'):
         mess = f'---'
         st.session_state.toProcessInput.append(mess)
 
+        allSymb_startEnd_lst = []
         for symbol in symbol_select:
             if startTimeRangeOption == 'earliestTimeStamp':
                 date = g12d.getTickerEarliesrTimeStamp(apikey_12Data, symbol, interval)
-                mess = f'earliestTimeStamp for {symbol}: {date}'
-                st.session_state.toProcessInput.append(mess)
+                #mess = f'earliestTimeStamp for {symbol}: {date}'
+                #st.session_state.toProcessInput.append(mess)
                 final_start_date = date['datetime_data']
             if startTimeRangeOption == 'user provided StartDate':
-                mess = f'user provided StartDate input: {start_date_input}'
-                st.session_state.toProcessInput.append(mess) 
+                #mess = f'user provided StartDate input: {start_date_input}'
+                #st.session_state.toProcessInput.append(mess) 
                 final_start_date = start_date_input
             if startTimeRangeOption == "Today's Date":
-                mess = f'Todays Date input: {today_date_input}'
-                st.session_state.toProcessInput.append(mess) 
+                #mess = f'Todays Date input: {today_date_input}'
+                #st.session_state.toProcessInput.append(mess) 
                 final_start_date = today_date_input
 
 
             if endTimeRangeOption == 'user provided EndDate':
-                mess = f'user provided EndDate input: {end_date_input}'
-                st.session_state.toProcessInput.append(mess)
+                #mess = f'user provided EndDate input: {end_date_input}'
+                #st.session_state.toProcessInput.append(mess)
                 final_end_date = end_date_input    
             if endTimeRangeOption == "Time Interval":
-                mess = f'Time Interval Value is: {timeIntervalValue} {timeIntervalUnit}'
-                st.session_state.toProcessInput.append(mess) 
+                #mess = f'Time Interval Value is: {timeIntervalValue} {timeIntervalUnit}'
+                #st.session_state.toProcessInput.append(mess) 
                 final_end_date = g12d.addRelTimeDelta(final_start_date, timeIntervalValue, timeIntervalUnit)
             if endTimeRangeOption == "Today's Date":
-                mess = f'Todays Date input: {today_date_input}'
-                st.session_state.toProcessInput.append(mess) 
+                #mess = f'Todays Date input: {today_date_input}'
+                #st.session_state.toProcessInput.append(mess) 
                 final_end_date = today_date_input
-            mess = f'Time Series Computations Date Range| Start Date: {final_start_date} | End Date: {final_end_date}  '
+            mess = f'{symbol} Time Series Computations Date Range| Start Date: {final_start_date} | End Date: {final_end_date}  '
             st.session_state.toProcessInput.append(mess) 
-            mess = f'---'
-            st.session_state.toProcessInput.append(mess)
+
+            symb_startEnd_df = g12d.getStartStopRngeLst(symbol, interval, final_start_date, final_end_date) 
+            allSymb_startEnd_lst.append(symb_startEnd_df)
 
         with use12Data_expander:
             if len(st.session_state.toProcessInput) != 0:
@@ -386,7 +388,11 @@ if st.sidebar.button('Submit'):
                 colorHeader(fontcolor = '#800080', fontsze = 20, msg = mess)
             for msg in st.session_state.toProcessInput:
                 colorHeader(fontcolor = '#00008B', fontsze = 12, msg = msg)
-            
+        
+        getAllSymbolTimeSeries_dfs(allSymb_startEnd_lst)
+               
+
+
 else:
     pass
      #st.write('Goodbye')
