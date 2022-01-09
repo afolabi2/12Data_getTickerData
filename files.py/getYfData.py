@@ -1,5 +1,6 @@
 import yfinance as yf
 import numpy as np
+import streamlit as st
 
 #==========================
 # START FUNCTIONS
@@ -23,7 +24,6 @@ def get_yf_outstand_shares_fromTckrObj(tckerInfo):
     error_outstand_share = False
     try:
         info_outstand_shares = tckerInfo['sharesOutstanding']
-        print(f'success shares outstanding data passed')
     except KeyError:
         info_outstand_shares = np.NaN
         error_outstand_share = True
@@ -58,6 +58,7 @@ def get_yf_float_shares(symbol):
 #==========================
 # GET BOTH FLOAT AND OUTSTANDING SHARES FUNCTION
 #==========================
+@st.cache
 def get_yf_float_outstand_shares(symbol):
     print("*" * 60)
     print(f'{symbol} outstanding & float shares data extraction initialized')

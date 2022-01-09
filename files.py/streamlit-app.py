@@ -4,9 +4,21 @@ import datetime
 import get12Data as g12d
 from io import StringIO 
 
+from dataclasses import dataclass
+from dataclasses import field
+from dataclasses import InitVar
 
+# ====================
+# RUN APP!!!!!
+# ====================
 # to run streamlit app
 # streamlit run ./files.py/streamlit-app.py
+
+
+# ====================
+# WAITING TASKS
+# ====================
+# Need to comment every line/action done!!!!!!!
 
 # ====================
 # SETTINGS FUNCTIONS
@@ -68,7 +80,7 @@ def filterPrint(symbol_select, type_select, country_select, exchange_select ):
     df_filter, symb_error_out_shre_lst, symb_error_flt_shre_lst = g12d.filter_tcker(apikey_12Data, stocks_df, symbol_select, 
                                         type_select, country_select, exchange_select)  
     st.session_state.messages = []    
-    st.session_state.dataframe = [] 
+    st.session_state.df_filter = [] 
     mess = f'Nos. of Tickers Processed with filter criteria: **{len(df_filter.index)}**'
     st.session_state.messages.append(mess)
     
@@ -91,7 +103,7 @@ def filterPrint(symbol_select, type_select, country_select, exchange_select ):
         st.session_state.messages.append(mess)
         mess = symb_error_flt_shre_lst
         st.session_state.messages.append(mess)
-    st.session_state.dataframe.append(df_filter)
+    st.session_state.df_filter.append(df_filter)
 
     with get12Data_expander:
         for msg in st.session_state.messages:
@@ -99,7 +111,7 @@ def filterPrint(symbol_select, type_select, country_select, exchange_select ):
         if "dataframe" in st.session_state: 
             msg = 'DataFrame for Filtered Ticker List'
             colorHeader(fontcolor = '#800080', fontsze = 18, msg = msg)
-        for dataframe in st.session_state.dataframe:
+        for dataframe in st.session_state.df_filter:
             st.dataframe(dataframe)
     
     return df_filter, symb_error_out_shre_lst, symb_error_flt_shre_lst
@@ -124,17 +136,22 @@ def initialiseTickerLst(apikey_12Data):
 apikey_12Data = "7940a5c7698545e98f6617f235dd1d5d"
 stocks_df = initialiseTickerLst(apikey_12Data)
 total_rows_unfiltered_tickername_12Data = len(stocks_df)
-get12Data_expander = st.expander(f"12Data OutPut: TickerList+Outstanding Shares+FloatShares")
+get12Data_expander = st.expander(f"12Data OutPut Dataframe: Tickerlist+Outstanding Shares+FloatShares")
 with get12Data_expander:
     msg = 'Tickers Available from 12Data'
     colorHeader(fontcolor = '#800080', fontsze = 18, msg = msg)
     st.markdown(f'total nos of tickers available: **{total_rows_unfiltered_tickername_12Data:,}**')
+
 if "messages" not in st.session_state:      
     st.session_state.messages = []    
 if "dataframe" not in st.session_state: 
-    st.session_state.dataframe = []   
+    st.session_state.df_filter = []   
 if "toProcessInput" not in st.session_state: 
-    st.session_state.toProcessInput = []   
+    st.session_state.toProcessInput = [] 
+if "df_requests" not in st.session_state: 
+    st.session_state.df_requests = []  
+if "symb_lst" not in st.session_state: 
+    st.session_state.symb_lst = []  
 # ====================
 # SIDE BAR AREA 
 # ====================
@@ -249,18 +266,6 @@ if inst_radio == "Stock Ticker":
         st.sidebar.write(f'**Selected Stock Data Interval is {interval}**')
         st.sidebar.markdown("---")        
 
-        #st.markdown("""### TIME RANGE SELECTION\START DATE""")
-        #timeRangeOption = st.selectbox('Please select type of Time Range Selection',
-        #                                ('earliestTimeStamp_todaysDate',
-        #                                'earliestTimeStamp_userEndDate',
-        #                                'earliestTimeStamp_timeRange',
-        #                                'userStartDate_todaysDate',
-        #                                'userStartDate_timeRange',
-        #                                'userEndDate_timeRange',
-        #                                'userStartDate_userEndDate'))
-        #st.write('You selected:', timeRangeOption)
-        #st.markdown("---")
-
         msg = 'TIME RANGE SELECTION: START DATE'
         sideBarcolorMarkDown(fontcolor = '#800080', fontsze = 14, msg = msg)
         approvedDateInputType = ('user provided StartDate', 'user provided EndDate')
@@ -273,9 +278,11 @@ if inst_radio == "Stock Ticker":
         if startTimeRangeOption in approvedDateInputType:
             start_date_input = st.sidebar.date_input("Select Start Date", datetime.date.today())
             st.sidebar.write('Start Date is:', start_date_input)
+        
         elif startTimeRangeOption ==  "Today's Date":
-            today_date_input = datetime.date.now()
+            today_date_input = datetime.date.today()
             st.sidebar.write('Start Date is:', today_date_input)
+        
         elif startTimeRangeOption ==  "earliestTimeStamp":
             st.sidebar.write(f'We will Calculate Start Date from {startTimeRangeOption}')
         st.sidebar.markdown("---")
@@ -299,13 +306,16 @@ if inst_radio == "Stock Ticker":
         if endTimeRangeOption in approvedDateInputType:
             end_date_input = st.sidebar.date_input("Select End Date", datetime.date.today())
             st.sidebar.write('End Date is:', end_date_input)
-
+        
         elif endTimeRangeOption ==  "Today's Date":
+            today_date_input = datetime.date.today()
             st.sidebar.write('End Date is:', datetime.date.today())
+        
         elif endTimeRangeOption ==  "Time Interval":
             timeIntervalUnit = st.sidebar.selectbox('Please select Time Interval Unit?',('seconds', 'minutes', 'hours', 'days', 'weeks', 'months', 'years'))
             timeIntervalValue = st.sidebar.number_input('Insert a Time Interval Value', min_value = 1)
             st.sidebar.write(f'Selected Time Interval is {timeIntervalValue} {timeIntervalUnit}')
+        
         else:
             st.sidebar.write(f'We will Calculate End Date from {endTimeRangeOption}')
         
@@ -318,15 +328,15 @@ if inst_radio == "Stock Ticker":
 use12Data_expander = st.expander(f"12Data Input for Time Series Computations")
 
 if st.sidebar.button('Submit'):
-    #need to add hard limits to qty of tickers and date ranges here
     if not filter_submit:
-        print("this is some bullshit")
         df_filter, symb_error_out_shre_lst, symb_error_flt_shre_lst = filterPrint(symbol_select, type_select, country_select, exchange_select )
     
     if len(symbol_select) == 0:
                 st.warning('Please populate ticker symbol')
     else:
-        st.session_state.toProcessInput = []  
+        st.session_state.toProcessInput = [] 
+        st.session_state.symb_lst = []  
+        st.session_state.symb_lst = symbol_select
         mess = f'Instrument Type selected: {inst_radio}'
         st.session_state.toProcessInput.append(mess) 
         mess = f'Data Source selected: {src_radio}'
@@ -347,49 +357,62 @@ if st.sidebar.button('Submit'):
         mess = f'---'
         st.session_state.toProcessInput.append(mess)
 
-        allSymb_startEnd_lst = []
+        st.session_state.df_requests = []
         for symbol in symbol_select:
             if startTimeRangeOption == 'earliestTimeStamp':
-                date = g12d.getTickerEarliesrTimeStamp(apikey_12Data, symbol, interval)
-                #mess = f'earliestTimeStamp for {symbol}: {date}'
-                #st.session_state.toProcessInput.append(mess)
-                final_start_date = date['datetime_data']
+                date_info = g12d.getTickerEarliesrTimeStamp(apikey_12Data, symbol, interval)
+                final_start_date_str = date_info['datetime_data']
+                final_start_date = g12d.convertDateStrLen10toDateTime(final_start_date_str)
+
             if startTimeRangeOption == 'user provided StartDate':
-                #mess = f'user provided StartDate input: {start_date_input}'
-                #st.session_state.toProcessInput.append(mess) 
-                final_start_date = start_date_input
+                final_start_date_str = g12d.convertDateTimeToDateStrLen10(start_date_input)
+                final_start_date =  g12d.convertDateStrLen10toDateTime(final_start_date_str)
             if startTimeRangeOption == "Today's Date":
-                #mess = f'Todays Date input: {today_date_input}'
-                #st.session_state.toProcessInput.append(mess) 
-                final_start_date = today_date_input
+                final_start_date_str = g12d.convertDateTimeToDateStrLen10(today_date_input)
+                final_start_date = g12d.convertDateStrLen10toDateTime(final_start_date_str)
 
 
             if endTimeRangeOption == 'user provided EndDate':
-                #mess = f'user provided EndDate input: {end_date_input}'
-                #st.session_state.toProcessInput.append(mess)
-                final_end_date = end_date_input    
+                final_end_date_str = g12d.convertDateTimeToDateStrLen10(end_date_input)
+                final_end_date = g12d.convertDateStrLen10toDateTime(final_end_date_str)
+
             if endTimeRangeOption == "Time Interval":
-                #mess = f'Time Interval Value is: {timeIntervalValue} {timeIntervalUnit}'
-                #st.session_state.toProcessInput.append(mess) 
                 final_end_date = g12d.addRelTimeDelta(final_start_date, timeIntervalValue, timeIntervalUnit)
+                final_end_date_str = g12d.convertDateTimeToDateStrLen10(final_end_date)
             if endTimeRangeOption == "Today's Date":
-                #mess = f'Todays Date input: {today_date_input}'
-                #st.session_state.toProcessInput.append(mess) 
-                final_end_date = today_date_input
-            mess = f'{symbol} Time Series Computations Date Range| Start Date: {final_start_date} | End Date: {final_end_date}  '
-            st.session_state.toProcessInput.append(mess) 
+                final_end_date_str = g12d.convertDateTimeToDateStrLen10(today_date_input)
+                final_end_date = g12d.convertDateStrLen10toDateTime(final_end_date_str)
+           
+            symb_startEnd_df,maxRequestPerDay_freekey = g12d.getStartStopRngeLst(symbol, interval, final_start_date, final_end_date) 
+            nosOfLoopsPerSymb = len(symb_startEnd_df.index)
+            st.session_state.df_requests.append(symb_startEnd_df)
+            
+            if nosOfLoopsPerSymb > maxRequestPerDay_freekey:
+                mess = f'{symbol}: {nosOfLoopsPerSymb} Required Requests exceeds Daily Free API Limit of {maxRequestPerDay_freekey} Requests'
+                st.session_state.toProcessInput.append(mess) 
+            else:
+                mess = f'{symbol}: {nosOfLoopsPerSymb} Required Requests dont exceed Daily Free API Limit of {maxRequestPerDay_freekey} Requests'
+                st.session_state.toProcessInput.append(mess) 
 
-            symb_startEnd_df = g12d.getStartStopRngeLst(symbol, interval, final_start_date, final_end_date) 
-            allSymb_startEnd_lst.append(symb_startEnd_df)
-
+        # writing of data
         with use12Data_expander:
             if len(st.session_state.toProcessInput) != 0:
                 mess = f'Data to be passed on for Time Series Computations'
                 colorHeader(fontcolor = '#800080', fontsze = 20, msg = mess)
             for msg in st.session_state.toProcessInput:
                 colorHeader(fontcolor = '#00008B', fontsze = 12, msg = msg)
+            cnt = 0
+            for dataframe in st.session_state.df_requests:
+                symbol = symbol_select[cnt]
+                mess = f'{symbol} Requests DataFrame'
+                colorHeader(fontcolor = '#00008B', fontsze = 12, msg = mess)
+                st.dataframe(dataframe)
+                cnt+=1
+
+        allSymb_startEnd_lst = st.session_state.df_requests
         
-        getAllSymbolTimeSeries_dfs(allSymb_startEnd_lst)
+
+        g12d.getAllSymbolTimeSeries_dfs(apikey_12Data, allSymb_startEnd_lst)
                
 
 
