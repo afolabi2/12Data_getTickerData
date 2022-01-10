@@ -360,7 +360,7 @@ if st.sidebar.button('Submit'):
         st.session_state.df_requests = []
         for symbol in symbol_select:
             if startTimeRangeOption == 'earliestTimeStamp':
-                date_info = g12d.getTickerEarliesrTimeStamp(apikey_12Data, symbol, interval)
+                date_info = g12d.getTickerEarliesrTimeStamp(apikey_12Data, symbol)
                 final_start_date_str = date_info['datetime_data']
                 final_start_date = g12d.convertDateStrLen10toDateTime(final_start_date_str)
 
@@ -412,7 +412,7 @@ if st.sidebar.button('Submit'):
         allSymb_startEnd_lst = st.session_state.df_requests
         
 
-        g12d.getAllSymbolTimeSeries_dfs(apikey_12Data, allSymb_startEnd_lst)
+        g12d.getAllSymbolTimeSeries_dfs(apikey_12Data, symbol_select, allSymb_startEnd_lst)
                
 
 
