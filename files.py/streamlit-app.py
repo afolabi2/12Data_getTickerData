@@ -117,8 +117,6 @@ def filterPrint(symbol_select, type_select, country_select, exchange_select ):
     return df_filter, symb_error_out_shre_lst, symb_error_flt_shre_lst
 
 
-
-
 # ====================
 # DATAFRAME FORMATTING 
 # ====================
