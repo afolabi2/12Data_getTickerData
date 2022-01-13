@@ -239,7 +239,8 @@ if inst_radio == "Stock Ticker":
         type_lst = g12d.get_tcker_type_lst(stocks_df)
         type_select = st.sidebar.multiselect('Type in the ticker type here', 
                                             options = type_lst,
-                                            default = ["Common", "Common Stock", "EQUITY"])    
+                                            default = ["Common Stock"])   
+                                            #default = ["Common", "Common Stock", "EQUITY"]) seems 12data removed the common and equity options
 
         country_lst = g12d.get_tcker_country_lst(stocks_df)
         country_select = st.sidebar.multiselect('Type in the ticker country here', 
@@ -267,10 +268,10 @@ if inst_radio == "Stock Ticker":
         msg = 'TIME RANGE SELECTION: START DATE'
         sideBarcolorMarkDown(fontcolor = '#800080', fontsze = 14, msg = msg)
         approvedDateInputType = ('user provided StartDate', 'user provided EndDate')
-        AllTimeRngeTuple = ('earliestTimeStamp','user provided StartDate', 'user provided EndDate', 'Time Interval', "Today's Date")
+        AllTimeRngeTuple = ('user provided StartDate', 'earliestTimeStamp','user provided EndDate', 'Time Interval', "Today's Date")
 
         
-        startTimeRngeTuple = ('earliestTimeStamp','user provided StartDate', "Today's Date")
+        startTimeRngeTuple = ('user provided StartDate', 'earliestTimeStamp', "Today's Date")
         startTimeRangeOption = st.sidebar.selectbox('Please select type of Start Date', startTimeRngeTuple )
 
         if startTimeRangeOption in approvedDateInputType:
