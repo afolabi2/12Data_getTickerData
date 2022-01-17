@@ -9,6 +9,7 @@ import pathlib
 import streamlit as st
 import getYfData as yfd
 from time import sleep
+import time
 from datetime import datetime
 from datetime import timedelta
 from dateutil.relativedelta import relativedelta, MO
@@ -33,11 +34,11 @@ class singleTickerData(object):
     ticker: str
     interval: str
     start_date: str
+    end_date: str
     outputsize: int
-    status_message: str
     df_tsMeta: pd.core.frame.DataFrame
     df_tsData: pd.core.frame.DataFrame
-    df_tsError: pd.core.frame.DataFrame
+
 
 @dataclass  # data class to hold list of ticker dataclass object
 class multiTickerData(object):
@@ -50,7 +51,7 @@ class multiTickerData(object):
 class singleTickerInput(object):
     # api keys
     #alpha_vantage_api_key : str = "FYQD4Z70A1KX5QI9"
-    twelvedata_api_key: str = "7940a5c7698545e98f6617f235dd1d5d"
+    twelvedata_api_key: str = "69287070d2f24f60a821b96ec1281011"
     ticker: str = "AAPL"
     interval: str = "1min"
     start_date: str = "2016-01-20"
@@ -60,7 +61,7 @@ class singleTickerInput(object):
     timezone: str = ""
 
 # ====================
-# TEXY FORMATTING FUNCTIONS
+# TEXT FORMATTING FUNCTIONS
 # ====================
 
 # ====================
@@ -116,6 +117,9 @@ def get_tck_stats_items(apikey_12Data, symbol):
     apikey = apikey_12Data
     twelvedata_url = f'https://api.twelvedata.com/{data_type}?symbol={symbol}&apikey={apikey}'
     json_object = requests.get(twelvedata_url).json()
+    
+    json_object = chkJsonObj(json_object)
+
     statistics_exists = chk_json_key_exists(
         json_key="statistics", json_object=json_object)
 
@@ -147,6 +151,8 @@ def get_tck_stocks_df(apikey_12Data):
     apikey = apikey_12Data
     twelvedata_url = f'https://api.twelvedata.com/{data_type}'
     json_object = requests.get(twelvedata_url).json()
+
+    json_object = chkJsonObj(json_object)
 
     #types_stocks = ['EQUITY', 'Common', 'Common Stock', 'American Depositary Receipt',
     #                'Real Estate Investment Trust (REIT)', 'Unit', 'GDR', 'Closed-end Fund',
@@ -341,26 +347,29 @@ class CatchJsonError(Error):
         super().__init__(self.message)
     def __str__(self):
         st.error(f'code: {code}  \nmessage:{message}  \nstatus: {status}')
-        return f'{self.code} -> {self.message}'
+        return f'{self.code}  \n{self.message}  \nstatus: {status}'
 
 # WORK IN PROGRESS!!!!!!! check json object for api errors
 def chkJsonObj(json_object):
+    #get the keys of json object dictr
     keys = json_object.keys()
-    print(f'json object keys are {keys}')
     #check if error code json object exist in our json object keys
     error_keys = ['code', 'message', 'status']
     
     trueCnt = 0
     falseCnt = 0
+    """ trueCnt values above zero tells us the error keys exist as keys of json dict
+        falseCnt values above zero tells us at least 1 error keys is not a member key of json dict"""
     for error_key in error_keys:
         testval = error_key in keys
         if testval == True:
             trueCnt += 1
         else:
             falseCnt += 1
-    
+    # tells us this is a valid json object and returns it for onward use
     if falseCnt > 0:
-        return json_object
+       return json_object
+    # tells us this json object is an error json thrown out
     else:
         code = json_object['code']
         message = json_object['message']
@@ -374,7 +383,7 @@ def getTickerEarliesrTimeStamp(twelvedata_api_key, ticker):
     #twelvedata_url = f'https://api.twelvedata.com/{data_types}?symbol={ticker}&interval=1day&apikey={twelvedata_api_key}'
     twelvedata_url = f'https://api.twelvedata.com/earliest_timestamp?symbol={ticker}&interval=1day&apikey={twelvedata_api_key}'
     json_object = requests.get(twelvedata_url).json()
-
+    json_object = chkJsonObj(json_object)
     #session = requests.Session()
     # In case I run into issues, retry my connection
     #retries = Retry(total=5, backoff_factor=0.1, status_forcelist=[ 500, 502, 503, 504 ])
@@ -382,8 +391,7 @@ def getTickerEarliesrTimeStamp(twelvedata_api_key, ticker):
     # Initial request to get the ticker count
     #r = session.get(twelvedata_url)
     #json_object = r.json()
-
-    json_object = chkJsonObj(json_object)
+   
     datetime_data = json_object['datetime']
     unix_time_data = json_object['unix_time']
     mydict = {}
@@ -423,7 +431,7 @@ def addRelTimeDelta(date_dt, timeIntervalValue, timeIntervalUnit):
 """ # returns list of calculated start/end time/date that program will run to get complete range of data: 
     use this to circumspect the 5000entries limit per api call
     """
-@st.cache
+@st.cache(suppress_st_warning=True) 
 def getStartStopRngeLst(symbol, interval, start_date_dt, end_date_dt):
     # required data
     maxRequestPerDay_freekey = 800
@@ -437,12 +445,6 @@ def getStartStopRngeLst(symbol, interval, start_date_dt, end_date_dt):
 
     start_date_str = start_date_dt.strftime("%Y-%m-%d %H:%M:%S")
     end_date_str = end_date_dt.strftime("%Y-%m-%d %H:%M:%S")
-    # if len(start_date) == 10:
-    #     start_date = f'{start_date} 00:00:00'
-    # if len(end_date) == 10:
-    #     end_date = f'{end_date} 00:00:00'
-    #parsed_start = datetime.strptime(start_date_str, "%Y-%m-%d %H:%M:%S")
-    #parsed_end = datetime.strptime(end_date_str, "%Y-%m-%d %H:%M:%S")
 
     # get difference between start and end dates
     #timedelta_raw = parsed_end - parsed_start
@@ -455,25 +457,20 @@ def getStartStopRngeLst(symbol, interval, start_date_dt, end_date_dt):
         interval_lst[i]: intervalQty_lst[i] for i in range(len(interval_lst))}
     intervalInMinutes = interval_intervalQty_dict[interval]
 
-    # Time Range covered by useNosDataPts and Chart Interval in ints
-    use_Rnge_per_Request_int = intervalInMinutes * useNosDataPts
-    max_Rnge_per_Request_int = intervalInMinutes * maxNosDataPts
+    #calculate total nos of datapoints
+    data_pts_total = math.ceil(timedeltaInMinutes_int/intervalInMinutes)
 
-    # Time Range covered by useNosDataPts and Chart Interval in timedelta's
-    use_Rnge_per_Request_datetime = timedelta(
-        seconds=use_Rnge_per_Request_int * 60)
-    max_Rnge_per_Request_datetime = timedelta(
-        seconds=max_Rnge_per_Request_int * 60)
+    #if data_pts_total <= useNosDataPts:
+    #    use_Rnge_per_Request_int      = useNosDataPts * data_pts_total
+    #    use_Rnge_per_Request_datetime = timedelta(seconds=(timedeltaInMinutes_int * 60))
+    #else:
+    #    use_Rnge_per_Request_int      = useNosDataPts * data_pts_total
+    #    use_Rnge_per_Request_datetime = timedelta(seconds=(useNosDataPts * intervalInMinutes * 60))
 
-    # Nos of Requests to make
-    useNosOfRequests = timedeltaInMinutes_int / use_Rnge_per_Request_int
-    minNosOfRequests = timedeltaInMinutes_int / max_Rnge_per_Request_int
 
-    useNosOfRequests = math.ceil(useNosOfRequests)
-    minNosOfRequests = math.ceil(minNosOfRequests)
+    #calculate the total number of start/stop pairs or requests to make
+    nosReq = math.ceil(data_pts_total/useNosDataPts)
 
-    # we need to check that useNosOfRequests, minNosOfRequests are less than maxRequestPerDay_freekey
-    # not done yet
 
     # we are creating lists of start date/enddate/time interval
     symbol_namn_lst = []
@@ -483,18 +480,37 @@ def getStartStopRngeLst(symbol, interval, start_date_dt, end_date_dt):
     intervalinMin_lst = []
     data_pts_lst = []
     chartRnge_lst = []
-    for nos in range(useNosOfRequests):
+    
+    cnt = 0
+    leftOverDatapts = data_pts_total
+    for nos in range(nosReq):
         # populate entries
         if nos == 0:
             start_time_entry = start_date_dt
         else:
             start_time_entry = end_time_lst[nos - 1]
         # can switch to max_Rnge_per_Request_int instead of use_Rnge_per_Request_int
-        end_time_entry = start_time_entry + use_Rnge_per_Request_datetime
+        
         interval_entry = intervalInMinutes
-        data_pts_entry = useNosDataPts
+        
+        if data_pts_total <= useNosDataPts:
+            data_pts_entry = data_pts_total
+        else:
+            data_pts_entry = useNosDataPts
         # can switch to max_Rnge_per_Request_int instead of use_Rnge_per_Request_int
-        ChartRnge_entry = use_Rnge_per_Request_int
+        ChartRnge_entry = data_pts_total
+        
+        # correct the last data_pts_entry
+        #st.write(f'a1 {cnt}: {leftOverDatapts} : {data_pts_total} : {data_pts_entry}')
+        if leftOverDatapts >= data_pts_entry:
+            leftOverDatapts = leftOverDatapts - data_pts_entry
+        else: 
+            data_pts_entry = leftOverDatapts
+        #st.write(f'a2 {cnt}: {leftOverDatapts} : {data_pts_total} : {data_pts_entry}')
+
+        use_Rnge_per_Request_int = data_pts_entry * intervalInMinutes * 60
+        use_Rnge_per_Request_datetime = timedelta(seconds=(use_Rnge_per_Request_int))
+        end_time_entry = start_time_entry + use_Rnge_per_Request_datetime
 
         # populate lists
         start_time_lst.append(start_time_entry)
@@ -504,163 +520,348 @@ def getStartStopRngeLst(symbol, interval, start_date_dt, end_date_dt):
         data_pts_lst.append(data_pts_entry)
         chartRnge_lst.append(ChartRnge_entry)
         symbol_namn_lst.append(symbol)
+        cnt += 1
 
     # lets create dataframe from lists created above
     chartTSInput_dict = {"symbol": symbol_namn_lst, "start_time": start_time_lst, "end_time": end_time_lst, 
                         "interval": interval_lst, "interval_mins": intervalinMin_lst,
                          "data_pts_limit": data_pts_lst, "data_pts_all": chartRnge_lst}
     chartTSInput_df = pd.DataFrame(chartTSInput_dict)
+    st.dataframe(chartTSInput_df)
     return chartTSInput_df, maxRequestPerDay_freekey
 
 
 #function to get list of time series for each symbol in a list of symbols
-def getAllSymbolTimeSeries_dfs(twelvedata_api_key, symbol_select, allSymb_startEnd_lst):
-    df_qty = len(allSymb_startEnd_lst)
-    all_symb_timeSeries_dc_lst = []
+def getAllSymbolTimeSeries_dfs(twelvedata_api_key, symbol_startend_dict):
+    symbol_list             = symbol_startend_dict["symbol"]
+    allSymb_startEnd_lst    = symbol_startend_dict["start_stop_data"]
+    
+    all_symb_dc_lst = []
+    
+    msg_all = ''
+    
+    msg = '*' * 60
+    msg_all = msg_all + msg + '  \n'
+    
+    msg = f'Working on Getting all TimeSeries DataClasses for:'
+    msg_all = msg_all + msg + '  \n'
+
+    msg = f'{symbol_list}'
+    msg_all = msg_all + msg + '  \n'
+ 
+    msg = f'total nos of start stop dataframes {len(allSymb_startEnd_lst)}'
+    msg_all = msg_all + msg + '  \n'
+    msg = '*' * 60
+    msg_all = msg_all + msg + '  \n'
+
+    st.info(msg_all)
+
+    
+    cnt = 0 
     for symb_df in allSymb_startEnd_lst:
+        rows = len(symb_df.index)
+        msg_all = ''
+        msg = f'Working on Getting TimeSeries DataClass for {cnt}: {symbol_list[cnt]}'
+        msg_all = msg_all + msg + '  \n'
+        msg = f'Number of Start/End Rows: {rows}'
+        msg_all = msg_all + msg + '  \n'
+        
         symb_uniq_lst = symb_df['symbol'].unique()
         if len(symb_uniq_lst) == 1:
             symbol = symb_uniq_lst[0]
-            st.write(f'working on {symbol} df')
+            msg = f'{cnt} :working on {symbol} df'
+            msg_all = msg_all + msg + '  \n' 
         else:
-            st.write(f'problem: more than one symbol in symbol column')
-            st.write(f'{symb_uniq_lst}')
+            msg = f'problem: more than one symbol in symbol column'
+            msg_all = msg_all + msg + '  \n' 
+            msg = f'{symb_uniq_lst}'
+            msg_all = msg_all + msg + '  \n' 
         
-        symb_timeSeries_dc_lst = getSymbolTimeSeries_dfs(twelvedata_api_key, symb_df)
-        all_symb_timeSeries_dc_lst.append(symb_timeSeries_dc_lst)
+        for indx in symb_df.index:
+            msg = f'Ticker: {symbol}|index nos: {indx} | Start Time: {symb_df["start_time"][indx]} | End Time: {symb_df["end_time"][indx]}'
+            msg_all = msg_all + msg + '  \n'
+
+        st.warning(msg_all)
+        symb_dc = getSymbol_dc(twelvedata_api_key, symb_df)
+        all_symb_dc_lst.append(symb_dc)
+        cnt += 1
     
-    res_dct = {symbol_select[i]: all_symb_timeSeries_dc_lst[i] for i in range(len(symbol_select))}
-    print(res_dct)
+    res_dct = {symbol_list[i]: all_symb_dc_lst[i] for i in range(len(symbol_list))}
     return res_dct
-
-# WORK IN PROGRESS!!!!!!! function to get time series for each row of a symbol df in a list of symbols        
-def getSymbolTimeSeries_dfs(twelvedata_api_key, symb_df):        
-    cnt = 0
-    symb_timeSeries_dc_lst = []  #this may need to be a dataclass item: done for each ticker
-    print(symb_df.head(5))
-    for indx in symb_df.index:
-        #st.write(f'df: {symbol}|row: {indx}:{cnt}')
-        ticker = symb_df['symbol'][indx]
-        start_time = symb_df['start_time'][indx]
-        end_time = symb_df['end_time'][indx]
-        interval = symb_df['interval'][indx]
-        data_pts = symb_df['data_pts_limit'][indx]
-
-        tries = 0 
-        sleepVal = 3
         
-        #checking the loop we are at for each of a single ticker's intervals'
-        #msg = f"{cnt + 1} of {len(symb_df.index)} Loops for {ticker}: Getting Time Series Data for Specified Period  \nInterval: {interval}|StartTime: {start_time}|Data pts {data_pts}"
-        #print("=" * 80)
-        #print(msg)
-        #print("=" * 80)
-#
-        #st.info(msg)
-        msg_all = ''
-        timeSeries_dc = get_TimeSeries_12Data(twelvedata_api_key, ticker, interval, start_time, data_pts, tries, sleepVal, msg_all)
-        symb_timeSeries_dc_lst.append(timeSeries_dc)
-        cnt +=1
-    singleSymb_Combined_dc = combineTimeSeries_dc(symb_timeSeries_dc_lst)
-    # get output of data
-    dc_ticker           = singleSymb_Combined_dc.ticker
-    dc_interval         = singleSymb_Combined_dc.interval
-    dc_start_date       = singleSymb_Combined_dc.start_date
-    dc_outputsize       = singleSymb_Combined_dc.outputsize
-    dc_status_message   = singleSymb_Combined_dc.status_message
-    df_dc_tsMeta        = singleSymb_Combined_dc.df_tsMeta
-    df_dc_tsData        = singleSymb_Combined_dc.df_tsData
-    df_dc_tsError       = singleSymb_Combined_dc.df_tsError
 
-    # check ticker_dc contents
-    dc_content = []
-    dc_content.append(f'ticker check for {dc_ticker}  \n')
-    dc_content.append(f'ticker interval is {dc_interval}  \n')
-    dc_content.append(f'ticker stock data from date {dc_start_date}  \n')
-    dc_content.append(f'output size/data points {dc_outputsize}  \n')
-    dc_content.append(f'status message {dc_status_message}  \n')
-    dc_content.append(f'column qty of df_tsMeta is {len(df_dc_tsMeta.index)}  \n')
-    dc_content.append(f'column qty of df_tsData is {len(df_dc_tsData.index)}  \n')
-    dc_content.append(f'column qty of df_tsError is {len(df_dc_tsError.index)}  \n')
+# function to get time series for each row of a symbol df in a list of symbols        
+def getSymbol_dc(twelvedata_api_key, symb_df):        
+    cnt = 0
+    symb_cnt = len(symb_df['symbol'].unique())
 
-    msg_all = ''
-    for dc_item in dc_content:
-        msg_all = msg_all + dc_item
-    st.info(msg_all)
-    print('+' * 60)
-    print(msg_all)
-    print('+' * 60)
-    st.write(len(df_dc_tsData.index))
-    st.dataframe(df_dc_tsData)
+    if symb_cnt == 1:
+        symb_tsData_df_lst  = []
+        symb_tsMeta_df_lst  = []
+        symb_tsError_df_lst = [] 
+
+        for indx in symb_df.index:
+            ticker = symb_df['symbol'][indx]
+            start_time = symb_df['start_time'][indx]
+            end_time = symb_df['end_time'][indx]
+            interval = symb_df['interval'][indx]
+            data_pts = symb_df['data_pts_limit'][indx]
+    
+            tries = 0 
+            sleepVal = 3
+    
+            msg_all = ''
+            tsData_df, tsMeta_df, tsError_df = get_TS_12Data(twelvedata_api_key, ticker, interval, start_time, end_time, data_pts, tries,   sleepVal, msg_all)
+            
+            tsDataLen = len(tsData_df.index)
+            if tsDataLen != 0:
+                symb_tsData_df_lst.append(tsData_df)
+
+            symb_tsMeta_df_lst.append(tsMeta_df)
+            
+            tsErrorLen = len(tsError_df.index)
+            if tsErrorLen != 0:
+                symb_tsError_df_lst.append(tsError_df)
+        
+        tsErrorLstLen = len(symb_tsError_df_lst)
+        if tsErrorLstLen == 0:
+            cnt = 0 
+            testMetaDf = 0
+            for df_meta in symb_tsMeta_df_lst:
+                if cnt  == 0:
+                    compare_df_meta = df_meta
+                else:
+                    if compare_df_meta.equals(df_meta) != False:
+                        testMetaDf = 1
+            if testMetaDf == 0:
+                df_dc_tsData_all = pd.concat(symb_tsData_df_lst, axis=0)
+                #df_dc_tsError_all = pd.DataFrame()
+                ticker_dc = populate_ticker_dc(ticker, interval, start_time, end_time, data_pts, compare_df_meta, df_dc_tsData_all)
+            else:
+                st.error(f'meta df error') 
+        else:
+            st.error(f'error df error')
+
+            #    
+            #timeSeries_dc = get_TimeSeries_12Data(twelvedata_api_key, ticker, interval, start_time, data_pts, tries, sleepVal, msg_all)
+        #    st.write(timeSeries_dc)
+        #    symb_timeSeries_dc_lst.append(timeSeries_dc)
+        #    cnt +=1
+        #singleSymb_Combined_dc = combineTimeSeries_dc(symb_timeSeries_dc_lst)
+        ## get output of data
+        #dc_ticker           = singleSymb_Combined_dc.ticker
+        #dc_interval         = singleSymb_Combined_dc.interval
+        #dc_start_date       = singleSymb_Combined_dc.start_date
+        #dc_outputsize       = singleSymb_Combined_dc.outputsize
+        #dc_status_message   = singleSymb_Combined_dc.status_message
+        #df_dc_tsMeta        = singleSymb_Combined_dc.df_tsMeta
+        #df_dc_tsData        = singleSymb_Combined_dc.df_tsData
+        #df_dc_tsError       = singleSymb_Combined_dc.df_tsError
+#   
+        ## check ticker_dc contents
+        #dc_content = []
+        #dc_content.append(f'ticker check for {dc_ticker}  \n')
+        #dc_content.append(f'ticker interval is {dc_interval}  \n')
+        #dc_content.append(f'ticker stock data from date {dc_start_date}  \n')
+        #dc_content.append(f'output size/data points {dc_outputsize}  \n')
+        #dc_content.append(f'status message {dc_status_message}  \n')
+        #dc_content.append(f'column qty of df_tsMeta is {len(df_dc_tsMeta.index)}  \n')
+        #dc_content.append(f'column qty of df_tsData is {len(df_dc_tsData.index)}  \n')
+        #dc_content.append(f'column qty of df_tsError is {len(df_dc_tsError.index)}  \n')
+#   
+        ##msg_all = ''
+        ##for dc_item in dc_content:
+        ##    msg_all = msg_all + dc_item
+        ##st.info(msg_all)
+        ##print('+' * 60)
+        ##print(msg_all)
+        ##print('+' * 60)
+        ##st.write(len(df_dc_tsData.index))
+        ##st.dataframe(df_dc_tsData)
+        #return singleSymb_Combined_dc
+
+def get_TS_12Data(twelvedata_api_key, ticker, interval, start_time, end_time, data_pts, tries, sleepVal, msg_all):
+    maxtry = 20
+    # TwelveData Work
+    data_type = "time_series"
+    value_type = ["values"]
+    
+    # initialise empty dataframes
+    tsMeta_df = pd.DataFrame()
+    tsData_df = pd.DataFrame()
+    tsError_df = pd.DataFrame()
+    counter = 0
+
+    twelvedata_url = f"https://api.twelvedata.com/{data_type}?symbol={ticker}&start_date={start_time}&end_date={end_time}&interval={interval}&apikey={twelvedata_api_key}"
+    
+    json_object = requests.get(twelvedata_url).json()
+    #json_object = chkJsonObj(json_object)
+
+    # check if status key exists?
+    if ('status' in json_object):
+        status_exist = True
+    else:
+       status_exist = False
+    if (status_exist == True):
+        status_data = json_object['status']
+        #check status value says ok before we extract data
+        if status_data == 'ok':
+            msg = f'Status Key Check Ok!!!: TS Data Extraction Successful  \nstatus_data == ok for ticker: {ticker}|interval {interval}Start time: start_time|output size: {data_pts}'
+            msg_all = msg_all + msg + '  \n'
+            
+            status_mess = status_data
+            meta_data = json_object['meta']
+            # will add start and end dates to meta_df
+            tsMeta_df = pd.DataFrame(meta_data, index=[0])
+            value_data = json_object[f'{value_type[counter]}']
+            # will add start and end dates to meta_df
+            tsData_df = pd.DataFrame(value_data)
+            tsData_df = tsData_df.iloc[::-1].reset_index(drop=True)
+        elif status_data == 'error':
+            code_data = json_object['code']
+            if code_data == 429:
+                if tries == (maxtry + 1):
+                    msg = f'Time Series Data Extraction Failed!!!!  \nstatus_data == error for ticker: {ticker}|interval {interval}Start time: start_time|output size: {data_pts}'
+                    msg_all = msg_all + msg + '  \n'
+                    status_mess = status_data
+                    code_data = json_object['code']
+                    mess_data = json_object['message']
+                    error_data = json_object
+                    error_df = pd.DataFrame(json_object, index=[0])
+                    if data_type == "time_series":
+                        tsError_df = error_df
+                else:
+                    status_mess = status_data
+                    tries += 1
+                    sleepVal += 1 
+                    msg = f'Retry TS Data API call for {ticker}|interval {interval}|Start time: {start_time}|End time: {start_time}output size: {data_pts}  \nRetrying for |Times: {tries}|Secs of Sleep: {sleepVal}'
+                    msg_all = msg_all + msg + '  \n'
+                    if sleepVal > 0:
+                        sleep(sleepVal) 
+                    st.write(f'fuck this{msg_all}')                  
+                    get_TS_12Data(twelvedata_api_key, ticker, interval, start_time, data_pts, tries, sleepVal, msg_all)
+            elif code_data == 400:
+                message_data = json_object['message']
+                st.error(f'error code: {code_data}  \nmessage: {message_data}  \nstatus: {status_data}')
+            else:
+                message_data = json_object['message']
+                st.error(f'error code: {code_data}  \nmessage: {message_data}  \nstatus: {status_data}')
+                
+    elif (status_exist == False):
+        msg = f'Status Key Does not exist!!!: Will attempt TS Data Extraction from odd json object  \nstatus_data not exist for ticker:{ticker}|interval {interval}|Start time: start_time|output size: {data_pts}'
+        msg_all = msg_all + msg + '  \n'
+        st.write('status_exist == False')
+        status_mess = 'status key not exist'
+        meta_data = json_object['meta']
+        # will add start and end dates to meta_df
+        tsMeta_df = pd.DataFrame(meta_data, index=[0])
+        value_data = json_object[f'{value_type[counter]}']
+        tsData_df = pd.DataFrame(value_data)
+        tsData_df = tsData_df.iloc[::-1].reset_index(drop=True)
+    TSQty = len(tsData_df.index)
+    if len(tsData_df.index) > 0:
+        st.info(f'Time Series Data Successfully extracted: {ticker}|{interval}|{start_time}|{end_time}|{data_pts}|{TSQty}')
+        st.dataframe(tsData_df)
+    
+    return tsMeta_df, tsData_df, tsError_df
+
+
+
+
+
 
 
 def combineTimeSeries_dc(symb_timeSeries_dc_lst):
     cnt = 0
     msg_all = ''
-    allrows = 0
+
+    df_dc_tsData_all = pd.DataFrame()
+    tsData_df_lst = []
+    tsDataLen = 0
+    dc_outputsize_all = 0
+    Error_chk = 0
+    
     if len(symb_timeSeries_dc_lst) > 0:
-        for ticker_dc in symb_timeSeries_dc_lst:
-            print(f'{cnt}|{ticker_dc.start_date}:{ticker_dc.outputsize}|{len(ticker_dc.df_tsData.index)}')
-            allrows = allrows + len(ticker_dc.df_tsData.index)
-            meta_chk = 0
-            if len(ticker_dc.df_tsError.index) == 0:
-                if ticker_dc.status_message == 'ok':
-                    if cnt == 0:
-                        dc_ticker_00           = ticker_dc.ticker
-                        dc_interval_00         = ticker_dc.interval
-                        df_dc_tsMeta_00        = ticker_dc.df_tsMeta
-                        dc_start_date_00       = ticker_dc.start_date
-                        dc_outputsize_all       = ticker_dc.outputsize
-                        dc_status_message   = ticker_dc.status_message
-                        df_dc_tsError       = ticker_dc.df_tsError
-                        df_dc_tsData_all     = ticker_dc.df_tsData
-                    else:
-                        if  dc_ticker_00 == ticker_dc.ticker:
-                            if dc_interval_00  == ticker_dc.interval:
-                                if df_dc_tsMeta_00.symbol.equals(ticker_dc.df_tsMeta.symbol):
-                                    if df_dc_tsMeta_00.interval.equals(ticker_dc.df_tsMeta.interval):
-                                        if df_dc_tsMeta_00.currency.equals(ticker_dc.df_tsMeta.currency):
-                                            if df_dc_tsMeta_00.symbol.equals(ticker_dc.df_tsMeta.symbol):
-                                                if df_dc_tsMeta_00.exchange_timezone.equals(ticker_dc.df_tsMeta.exchange_timezone):
-                                                    if df_dc_tsMeta_00.exchange.equals(ticker_dc.df_tsMeta.exchange):
-                                                        if df_dc_tsMeta_00.type.equals(ticker_dc.df_tsMeta.type):
-                                                            dc_outputsize_all = dc_outputsize_all +ticker_dc.outputsize 
-                                                            # Stack the DataFrames on top of each other
-                                                            df_dc_tsData_all = pd.concat([df_dc_tsData_all, ticker_dc.df_tsData], axis=0).drop_duplicates()
-                                                        else:
-                                                            meta_chk = 1
-                                                    else:
-                                                        meta_chk = 1
-                                                else:
-                                                    meta_chk = 1
-                                            else:
-                                                meta_chk = 1
-                                        else:
-                                            meta_chk = 1
-                                    else:
-                                        meta_chk = 1
-                                else:
-                                    meta_chk = 1
-                                
-                            else:
-                                msg = f'invalid dataclass: ticker interval is not same across ticker dataclasses'
-                                msg_all = msg_all + msg + '  \n'
-                        else:
-                            msg = f'invalid dataclass: ticker value is not same across ticker dataclasses'
-                            msg_all = msg_all + msg + '  \n'
-                else:
-                    msg = f'invalid dataclass: a ticker data-class has invalid status'
-                    msg_all = msg_all + msg + '  \n'
-            else:
-                msg = f'invalid dataclass:ticker data-class error df registers error'
-                msg_all = msg_all + msg + '  \n'
-            if meta_chk ==1:
-                msg = f'invalid dataclass: ticker meta data is not same across ticker dataclasses'
-                msg_all = msg_all + msg + '  \n'
-            cnt += 1
+        pass
+    else:
+        Error_chk = 1
+        msg = f'DataClass List  for Ticker has Zero members'
+        msg_all = msg_all + msg + '  \n'    
+    
+    msg = f'Processing of Ticker Dataclass List starts now'
+    msg_all = msg_all + msg + '  \n'    
+    for ticker_dc in symb_timeSeries_dc_lst:
+        msg = f'dataclass nos.: {cnt}|symbol: {ticker_dc.ticker}|start date: {ticker_dc.start_date}|max data_pts: {ticker_dc.outputsize}|actual data_pts: {len(ticker_dc.df_tsData.index)}'
+        msg_all = msg_all + msg + '  \n'
         
-        if msg_all == '':
+        if len(ticker_dc.df_tsError.index) == 0:
+            pass
+        else:
+            Error_chk = 1
+            msg = f'invalid dataclass: current dataclass error-df is not zero'
+            msg_all = msg_all + msg + '  \n'
+        
+        if ticker_dc.status_message == 'ok':
+            pass
+        else:
+            Error_chk = 1
+            msg = f'invalid dataclass: current dataclass status message is not ok'
+            msg_all = msg_all + msg + '  \n'
+
+        if cnt == 0:
+            dc_ticker_00           = ticker_dc.ticker
+            dc_interval_00         = ticker_dc.interval
+            dc_start_date_00       = ticker_dc.start_date
+            dc_status_message   = ticker_dc.status_message
+
+            df_dc_tsError       = ticker_dc.df_tsError
+            df_dc_tsMeta_00        = ticker_dc.df_tsMeta
+
+            dc_outputsize_all       = dc_outputsize_all + ticker_dc.outputsize
+            tsDataLen = tsDataLen + len(ticker_dc.df_tsData)
+            tsData_df_lst.append(ticker_dc.df_tsData)
+        else:
+            if  dc_ticker_00 == ticker_dc.ticker:
+                pass
+            else:
+                Error_chk = 1
+                msg = f'invalid dataclass: current dataclass symbol not same as first ticker dataclass symbol'
+                msg_all = msg_all + msg + '  \n'
+
+
+            if dc_interval_00  == ticker_dc.interval:
+                pass
+            else:
+                Error_chk = 1
+                msg = f'invalid dataclass: current dataclass interval not same as first ticker dataclass interval'
+                msg_all = msg_all + msg + '  \n'
+
+            if df_dc_tsMeta_00.equals(ticker_dc.df_tsMeta):
+                pass
+            else:
+                Error_chk = 1
+                msg = f'invalid dataclass: current dataclass MetaData Dataframe not same as first ticker dataclass MetaData Dataframe '
+                msg_all = msg_all + msg + '  \n'
+
+            if Error_chk == 0:
+                dc_outputsize_all = dc_outputsize_all +ticker_dc.outputsize 
+                tsDataLen = tsDataLen + len(ticker_dc.df_tsData)
+                tsData_df_lst.append(ticker_dc.df_tsData)
+                msg = f'total max data_pts is {dc_outputsize_all}|total actual data_pts is {tsDataLen}'
+                msg_all = msg_all + msg + '  \n'
+            
+        cnt += 1
+        if Error_chk == 0:
+            
+            df_dc_tsData_all = pd.concat(tsData_df_lst, axis=0)
+            #df_dc_tsData_all = pd.concat(tsData_df_lst, axis=0).drop_duplicates()
+
+            st.info(msg_all)
+
+        
             final_ticker_dc = populate_ticker_dc(dc_ticker_00, dc_interval_00, dc_start_date_00, dc_outputsize_all, dc_status_message,  df_dc_tsMeta_00, df_dc_tsData_all, df_dc_tsError)
-            st.write(allrows)
+            st.dataframe(df_dc_tsData_all.head(5))
+            st.dataframe(df_dc_tsData_all.tail(5))
             return final_ticker_dc
         else:
             st.error(msg_all)
@@ -683,6 +884,8 @@ def get_TimeSeries_12Data(twelvedata_api_key, ticker, interval, start_time, data
     tsData_df = pd.DataFrame()
     tsError_df = pd.DataFrame()
     counter = 0
+
+
     for data_type in data_types:
         # time series data - adjusted close price
         # ref: https://support.twelvedata.com/en/articles/5179064-are-the-prices-adjusted
@@ -697,6 +900,7 @@ def get_TimeSeries_12Data(twelvedata_api_key, ticker, interval, start_time, data
         # Initial request to get the ticker count
         r = session.get(twelvedata_url)
         json_object = r.json()
+        json_object = chkJsonObj(json_object)
 
         #st.json(json_object)
 
@@ -717,12 +921,6 @@ def get_TimeSeries_12Data(twelvedata_api_key, ticker, interval, start_time, data
                 msg = f'Status Key Check Ok!!!: TS Data Extraction Successful  \nstatus_data == ok for ticker: {ticker}|interval {interval}|Start time: start_time|output size: {data_pts}'
                 msg_all = msg_all + msg + '  \n'
                 
-                #st.info(msg)
-#
-                #print('+' * 60)
-                #print(msg)
-                #print('+' * 60)
-                
                 status_mess = status_data
                 meta_data = json_object['meta']
                 # will add start and end dates to meta_df
@@ -731,12 +929,11 @@ def get_TimeSeries_12Data(twelvedata_api_key, ticker, interval, start_time, data
                 value_data = json_object[f'{value_type[counter]}']
                 # will add start and end dates to meta_df
                 tsData_df = pd.DataFrame(value_data)
+                tsData_df = tsData_df.iloc[::-1].reset_index(drop=True)
+                st.dataframe(tsData_df)
 
                 ticker_dc = populate_ticker_dc(ticker, interval, start_time, data_pts, status_mess,  tsMeta_df, tsData_df, tsError_df)
                 
-
-            #when status value returns error we add an error df? is that not an overkill 
-            #we should add that value error to the request df for approprait row
             elif status_data == 'error':
                 if tries == (maxtry + 1):
                     msg = f'Time Series Data Extraction Failed!!!!  \nstatus_data == error for ticker: {ticker}|interval {interval}|Start time: start_time|output size: {data_pts}'
@@ -778,6 +975,8 @@ def get_TimeSeries_12Data(twelvedata_api_key, ticker, interval, start_time, data
 
             value_data = json_object[f'{value_type[counter]}']
             tsData_df = pd.DataFrame(value_data)
+            tsData_df = tsData_df.iloc[::-1].reset_index(drop=True)
+            st.dataframe(tsData_df)
 
             ticker_dc =  populate_ticker_dc(ticker, interval, start_time, data_pts, status_mess,  tsMeta_df, tsData_df, tsError_df)
 
@@ -833,20 +1032,21 @@ def get_TimeSeries_12Data(twelvedata_api_key, ticker, interval, start_time, data
         #print(msg_all)
         #print('+' * 60)
 
+        st.dataframe(tsData_df.head(5))
+        st.dataframe(tsData_df.tail(5))
         counter += 1
         return ticker_dc
         
         
     
 
-def populate_ticker_dc(ticker, interval, start_time, data_pts, status_mess,  tsMeta_df, tsData_df, tsError_df):
+def populate_ticker_dc(ticker, interval, start_time, end_time, data_pts, compare_df_meta, df_dc_tsData_all):
     ticker_dc = singleTickerData(ticker=ticker,
                                      interval=interval,
                                      start_date=start_time,
+                                     end_date=end_time,
                                      outputsize=data_pts,
-                                     status_message=status_mess,
-                                     df_tsMeta=tsMeta_df,
-                                     df_tsData=tsData_df,
-                                     df_tsError=tsError_df,
+                                     df_tsMeta=compare_df_meta,
+                                     df_tsData=df_dc_tsData_all,
                                      )
     return ticker_dc

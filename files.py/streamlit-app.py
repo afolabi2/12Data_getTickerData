@@ -131,7 +131,8 @@ def initialiseTickerLst(apikey_12Data):
     stocks_df = g12d.get_tck_stocks_df(apikey_12Data)
     return stocks_df
 
-apikey_12Data = "7940a5c7698545e98f6617f235dd1d5d"
+demo_apikey_12Data = "7940a5c7698545e98f6617f235dd1d5d"
+apikey_12Data = "69287070d2f24f60a821b96ec1281011"
 stocks_df = initialiseTickerLst(apikey_12Data)
 total_rows_unfiltered_tickername_12Data = len(stocks_df)
 get12Data_expander = st.expander(f"12Data OutPut Dataframe: Tickerlist+Outstanding Shares+FloatShares")
@@ -225,7 +226,7 @@ if inst_radio == "Stock Ticker":
 
         elif (tcker_select_type_radio == "Single or Multiple Ticker(s) Symbols"):
             symbol_lst = g12d.get_tcker_symbol_lst(stocks_df)
-            symbol_select = st.sidebar.multiselect('Type in the ticker symbol here', options = symbol_lst)
+            symbol_select = st.sidebar.multiselect('Type in the ticker symbol here', options = symbol_lst, default = ["AAPL", "TSLA"])  # DEFAULT FOR TESTING
 
             with get12Data_expander:
                 st.markdown(f"Nos. of Legal tickers: **{len(symbol_select)}**")
@@ -275,7 +276,8 @@ if inst_radio == "Stock Ticker":
         startTimeRangeOption = st.sidebar.selectbox('Please select type of Start Date', startTimeRngeTuple )
 
         if startTimeRangeOption in approvedDateInputType:
-            start_date_input = st.sidebar.date_input("Select Start Date", datetime.date.today())
+            start_date_input = st.sidebar.date_input("Select Start Date", datetime.date(2019, 1, 13)) # FOR TESTING
+            #start_date_input = st.sidebar.date_input("Select Start Date", datetime.date.today())
             st.sidebar.write('Start Date is:', start_date_input)
         
         elif startTimeRangeOption ==  "Today's Date":
@@ -336,25 +338,25 @@ if st.sidebar.button('Submit'):
         st.session_state.toProcessInput = [] 
         st.session_state.symb_lst = []  
         st.session_state.symb_lst = symbol_select
-        mess = f'Instrument Type selected: {inst_radio}'
-        st.session_state.toProcessInput.append(mess) 
-        mess = f'Data Source selected: {src_radio}'
-        st.session_state.toProcessInput.append(mess) 
-        mess = f'API Key to use: {ApiKey_radio}'
-        st.session_state.toProcessInput.append(mess) 
-        mess = f'Ticker Symbol(s) Selected: {symbol_select}'
-        st.session_state.toProcessInput.append(mess) 
-        mess = f'Time Interval to use: {interval}'
-        st.session_state.toProcessInput.append(mess) 
-        mess = f'Time Range to procure Data: {getTmeRnge}'
-        st.session_state.toProcessInput.append(mess)
+        #mess = f'Instrument Type selected: {inst_radio}'
+        #st.session_state.toProcessInput.append(mess) 
+        #mess = f'Data Source selected: {src_radio}'
+        #st.session_state.toProcessInput.append(mess) 
+        #mess = f'API Key to use: {ApiKey_radio}'
+        #st.session_state.toProcessInput.append(mess) 
+        #mess = f'Ticker Symbol(s) Selected: {symbol_select}'
+        #st.session_state.toProcessInput.append(mess) 
+        #mess = f'Time Interval to use: {interval}'
+        #st.session_state.toProcessInput.append(mess) 
+        #mess = f'Time Range to procure Data: {getTmeRnge}'
+        #st.session_state.toProcessInput.append(mess)
 
-        mess = f'Time Range Start type is: {startTimeRangeOption}'
-        st.session_state.toProcessInput.append(mess)
-        mess = f'Time Range End Type is: {endTimeRangeOption}'
-        st.session_state.toProcessInput.append(mess)
-        mess = f'---'
-        st.session_state.toProcessInput.append(mess)
+        #mess = f'Time Range Start type is: {startTimeRangeOption}'
+        #st.session_state.toProcessInput.append(mess)
+        #mess = f'Time Range End Type is: {endTimeRangeOption}'
+        #st.session_state.toProcessInput.append(mess)
+        #mess = f'---'
+        #st.session_state.toProcessInput.append(mess)
 
         st.session_state.df_requests = []
         for symbol in symbol_select:
@@ -381,7 +383,7 @@ if st.sidebar.button('Submit'):
             if endTimeRangeOption == "Today's Date":
                 final_end_date_str = g12d.convertDateTimeToDateStrLen10(today_date_input)
                 final_end_date = g12d.convertDateStrLen10toDateTime(final_end_date_str)
-           
+            
             symb_startEnd_df,maxRequestPerDay_freekey = g12d.getStartStopRngeLst(symbol, interval, final_start_date, final_end_date) 
             nosOfLoopsPerSymb = len(symb_startEnd_df.index)
             st.session_state.df_requests.append(symb_startEnd_df)
@@ -409,9 +411,44 @@ if st.sidebar.button('Submit'):
                 cnt+=1
 
         allSymb_startEnd_lst = st.session_state.df_requests
+        msg_all = ''
+        #get number of tickers to be used
+        nosOfTickers = len(allSymb_startEnd_lst)
         
+        msg = f'Ticker multiple Start/End Intervals Dataframe Data Success!!!'
+        msg_all = msg_all + msg + '  \n'
+        msg = f'Nos of Tickers with multiple Start/End Intervals: {nosOfTickers}'
+        msg_all = msg_all + msg + '  \n'
+        
+        
+        cnt = 0
+        for symbStartEnd in allSymb_startEnd_lst:
+            curr_symb   = symbol_select[cnt]
+            
+            lenOfDf = len(symbStartEnd.index)
+            first_start = symbStartEnd.start_time[0]
+            last_end    = symbStartEnd.end_time[lenOfDf - 1]
+            
+            msg = '*' * 60
+            msg_all = msg_all + msg + '  \n'
 
-        g12d.getAllSymbolTimeSeries_dfs(apikey_12Data, symbol_select, allSymb_startEnd_lst)
+            msg = f'Symbol Data for: {curr_symb}  \nNos of Start/End Data to Get: {lenOfDf} '
+            msg_all = msg_all + msg + '  \n'
+            
+            msg = f'First Start Time: {first_start} | Last End Time: {last_end} '
+            msg_all = msg_all + msg + '  \n'
+            
+            cnt += 1
+        st.info(msg_all)
+        print('*' * 60)
+        print(msg_all)
+        print('*' * 60)
+
+        symbol_startend_dict = {
+        "symbol":symbol_select, "start_stop_data": allSymb_startEnd_lst}
+       
+
+        g12d.getAllSymbolTimeSeries_dfs(apikey_12Data, symbol_startend_dict)
                
 
 
