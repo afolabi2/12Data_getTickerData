@@ -135,7 +135,7 @@ demo_apikey_12Data = "7940a5c7698545e98f6617f235dd1d5d"
 apikey_12Data = "69287070d2f24f60a821b96ec1281011"
 stocks_df = initialiseTickerLst(apikey_12Data)
 total_rows_unfiltered_tickername_12Data = len(stocks_df)
-get12Data_expander = st.expander(f"12Data OutPut Dataframe: Tickerlist+Outstanding Shares+FloatShares")
+get12Data_expander = st.expander(f"12Data Tickerlist Dataframe containing Outstanding & Float Shares")
 with get12Data_expander:
     msg = 'Tickers Available from 12Data'
     colorHeader(fontcolor = '#800080', fontsze = 18, msg = msg)
@@ -338,26 +338,8 @@ if st.sidebar.button('Submit'):
         st.session_state.toProcessInput = [] 
         st.session_state.symb_lst = []  
         st.session_state.symb_lst = symbol_select
-        #mess = f'Instrument Type selected: {inst_radio}'
-        #st.session_state.toProcessInput.append(mess) 
-        #mess = f'Data Source selected: {src_radio}'
-        #st.session_state.toProcessInput.append(mess) 
-        #mess = f'API Key to use: {ApiKey_radio}'
-        #st.session_state.toProcessInput.append(mess) 
-        #mess = f'Ticker Symbol(s) Selected: {symbol_select}'
-        #st.session_state.toProcessInput.append(mess) 
-        #mess = f'Time Interval to use: {interval}'
-        #st.session_state.toProcessInput.append(mess) 
-        #mess = f'Time Range to procure Data: {getTmeRnge}'
-        #st.session_state.toProcessInput.append(mess)
 
-        #mess = f'Time Range Start type is: {startTimeRangeOption}'
-        #st.session_state.toProcessInput.append(mess)
-        #mess = f'Time Range End Type is: {endTimeRangeOption}'
-        #st.session_state.toProcessInput.append(mess)
-        #mess = f'---'
-        #st.session_state.toProcessInput.append(mess)
-
+        msg_all = ''
         st.session_state.df_requests = []
         for symbol in symbol_select:
             if startTimeRangeOption == 'earliestTimeStamp':
@@ -389,38 +371,42 @@ if st.sidebar.button('Submit'):
             st.session_state.df_requests.append(symb_startEnd_df)
             
             if nosOfLoopsPerSymb > maxRequestPerDay_freekey:
-                mess = f'{symbol}: {nosOfLoopsPerSymb} Required Requests exceeds Daily Free API Limit of {maxRequestPerDay_freekey} Requests'
-                st.session_state.toProcessInput.append(mess) 
+                msg = f'{nosOfLoopsPerSymb} Required Time Series Requests exceeds Daily Free API Limit of {maxRequestPerDay_freekey} Requests for {symbol}'
+                msg_all = msg_all + msg + '<br/>'
             else:
-                mess = f'{symbol}: {nosOfLoopsPerSymb} Required Requests dont exceed Daily Free API Limit of {maxRequestPerDay_freekey} Requests'
-                st.session_state.toProcessInput.append(mess) 
+                msg = f'{nosOfLoopsPerSymb} Required Time Series Requests wont exceed Daily Free API Limit of {maxRequestPerDay_freekey} Requests for {symbol}'
+                msg_all = msg_all + msg + '<br/>'
+            
+        allSymb_startEnd_lst = st.session_state.df_requests
+        #get number of tickers to be used
+        nosOfTickers = len(allSymb_startEnd_lst)
+        msg = f'Nos of Ticker Symbol(s) to process: {nosOfTickers}' + '<br/>'
+        msg_all = msg + msg_all
+        st.session_state.toProcessInput.append(msg_all) 
 
         # writing of data
         with use12Data_expander:
             if len(st.session_state.toProcessInput) != 0:
-                mess = f'Data to be passed on for Time Series Computations'
+                mess = f'Ticker Dataframes for Start Stop Date Ranges'
                 colorHeader(fontcolor = '#800080', fontsze = 20, msg = mess)
+           
             for msg in st.session_state.toProcessInput:
                 colorHeader(fontcolor = '#00008B', fontsze = 12, msg = msg)
             cnt = 0
             for dataframe in st.session_state.df_requests:
                 symbol = symbol_select[cnt]
-                mess = f'{symbol} Requests DataFrame'
+                st.write('*' * 60)
+                mess = f'{symbol} Requests Start Stop Date Range DataFrame'
                 colorHeader(fontcolor = '#00008B', fontsze = 12, msg = mess)
                 st.dataframe(dataframe)
                 cnt+=1
+            st.write('*' * 60)
 
-        allSymb_startEnd_lst = st.session_state.df_requests
+        
+        
+
+        get12Data_expander = st.expander(f"12Data Output for Time Series Computations")        
         msg_all = ''
-        #get number of tickers to be used
-        nosOfTickers = len(allSymb_startEnd_lst)
-        
-        msg = f'Ticker multiple Start/End Intervals Dataframe Data Success!!!'
-        msg_all = msg_all + msg + '  \n'
-        msg = f'Nos of Tickers with multiple Start/End Intervals: {nosOfTickers}'
-        msg_all = msg_all + msg + '  \n'
-        
-        
         cnt = 0
         for symbStartEnd in allSymb_startEnd_lst:
             curr_symb   = symbol_select[cnt]
@@ -429,28 +415,36 @@ if st.sidebar.button('Submit'):
             first_start = symbStartEnd.start_time[0]
             last_end    = symbStartEnd.end_time[lenOfDf - 1]
             
-            msg = '*' * 60
-            msg_all = msg_all + msg + '  \n'
-
-            msg = f'Symbol Data for: {curr_symb}  \nNos of Start/End Data to Get: {lenOfDf} '
-            msg_all = msg_all + msg + '  \n'
-            
-            msg = f'First Start Time: {first_start} | Last End Time: {last_end} '
-            msg_all = msg_all + msg + '  \n'
-            
+            msg = f'Time Series Data for {curr_symb} Will run {lenOfDf} Times from {first_start} to {last_end}'
+            msg_all = msg_all + msg + '<br/>'
             cnt += 1
-        st.info(msg_all)
-        print('*' * 60)
-        print(msg_all)
-        print('*' * 60)
+        msg = '*' * 60
+        msg_all = msg_all + msg + '<br/>'
+        # writing of data
+        with get12Data_expander:
+            mess = f'Ticker Dataframes for Time Series Data'
+            colorHeader(fontcolor = '#800080', fontsze = 20, msg = mess)
+            colorHeader(fontcolor = '#00008B', fontsze = 12, msg = msg_all)
 
         symbol_startend_dict = {
         "symbol":symbol_select, "start_stop_data": allSymb_startEnd_lst}
        
 
-        g12d.getAllSymbolTimeSeries_dfs(apikey_12Data, symbol_startend_dict)
-               
+        res_dct = g12d.getAllSymbolTimeSeries_dfs(apikey_12Data, symbol_startend_dict)
 
+        with get12Data_expander:
+
+            for key, value in res_dct.items():
+                msg_all = ''
+                total_data_pts = len(value.df_tsData.index)
+                msg = f'{value.ticker} Available Time Series Dataframe between {value.start_date} and {value.end_date}'
+                msg_all = msg_all + msg + '<br/>'
+                msg = f'Max Nos of DataPoints:{value.outputsize}'
+                msg_all = msg_all + msg + '<br/>'
+                msg = f'Total DataPoints:{total_data_pts}'
+                msg_all = msg_all + msg + '<br/>'
+                colorHeader(fontcolor = '#00008B', fontsze = 12, msg = msg_all)
+                st.dataframe(value.df_tsData)
 
 else:
     pass
