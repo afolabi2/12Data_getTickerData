@@ -1,19 +1,21 @@
 import streamlit as st
 import pandas as pd
 import datetime
-import get12Data as g12d
 from io import StringIO 
 
 from dataclasses import dataclass
 from dataclasses import field
 from dataclasses import InitVar
 
+import get12Data as g12d
+import getAnalytics as gAna
 # ====================
 # RUN APP!!!!!
 # ====================
 # to run streamlit app
 # streamlit run ./files.py/streamlit-app.py
 
+#mitq and gree brtx gfai need testing
 
 # ====================
 # WAITING TASKS
@@ -433,7 +435,6 @@ if st.sidebar.button('Submit'):
         res_dct = g12d.getAllSymbolTimeSeries_dfs(apikey_12Data, symbol_startend_dict)
 
         with get12Data_expander:
-
             for key, value in res_dct.items():
                 msg_all = ''
                 total_data_pts = len(value.df_tsData.index)
@@ -445,6 +446,22 @@ if st.sidebar.button('Submit'):
                 msg_all = msg_all + msg + '<br/>'
                 colorHeader(fontcolor = '#00008B', fontsze = 12, msg = msg_all)
                 st.dataframe(value.df_tsData)
+        getAnalytics_expander = st.expander(f"Analytics for Time Series Computations")
+        
+        
+        with getAnalytics_expander:
+            mess = f'Ticker Dataframes for Analytics'
+            colorHeader(fontcolor = '#800080', fontsze = 20, msg = mess)
+            for key, value in res_dct.items():
+                trans_df = gAna.analytics(value.df_tsData)
+                msg_all = ''
+                msg = f'Data Analytic Dataframe for :{value.ticker}'
+                msg_all = msg_all + msg + '<br/>'
+                colorHeader(fontcolor = '#00008B', fontsze = 12, msg = msg_all)
+                st.dataframe(trans_df)
+
+
+            
 
 else:
     pass
