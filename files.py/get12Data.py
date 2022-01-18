@@ -527,7 +527,7 @@ def getStartStopRngeLst(symbol, interval, start_date_dt, end_date_dt):
                         "interval": interval_lst, "interval_mins": intervalinMin_lst,
                          "data_pts_limit": data_pts_lst, "data_pts_all": chartRnge_lst}
     chartTSInput_df = pd.DataFrame(chartTSInput_dict)
-    st.dataframe(chartTSInput_df)
+    #st.dataframe(chartTSInput_df)
     return chartTSInput_df, maxRequestPerDay_freekey
 
 
@@ -565,6 +565,9 @@ def getSymbol_dc(twelvedata_api_key, symb_df):
             ticker = symb_df['symbol'][indx]
             if indx == 0:
                 start_time = symb_df['start_time'][indx]
+                start_time_dc = symb_df['start_time'][indx]
+            else:
+                start_time = symb_df['start_time'][indx]
             end_time = symb_df['end_time'][indx]
             interval = symb_df['interval'][indx]
             data_pts = symb_df['data_pts_limit'][indx] + data_pts
@@ -600,7 +603,7 @@ def getSymbol_dc(twelvedata_api_key, symb_df):
 
                 ticker_dc = singleTickerData(ticker=ticker,
                                                     interval=interval,
-                                                    start_date=start_time,
+                                                    start_date=start_time_dc,
                                                     end_date=end_time,
                                                     outputsize=data_pts,
                                                     df_tsMeta=compare_df_meta,
@@ -618,7 +621,6 @@ def get_TS_12Data(twelvedata_api_key, ticker, interval, start_time, end_time, da
     # TwelveData Work
     data_type = "time_series"
     value_type = ["values"]
-    
     # initialise empty dataframes
     tsMeta_df = pd.DataFrame()
     tsData_df = pd.DataFrame()
@@ -671,14 +673,14 @@ def get_TS_12Data(twelvedata_api_key, ticker, interval, start_time, end_time, da
                     msg_all = msg_all + msg + '  \n'
                     if sleepVal > 0:
                         sleep(sleepVal) 
-                    st.write(f'fuck this{msg_all}')                  
-                    get_TS_12Data(twelvedata_api_key, ticker, interval, start_time, data_pts, tries, sleepVal, msg_all)
+                    st.write(f'{msg_all}')                  
+                    get_TS_12Data(twelvedata_api_key, ticker, interval, start_time, end_time, data_pts, tries,   sleepVal, msg_all)
             elif code_data == 400:
                 message_data = json_object['message']
-                st.error(f'error code: {code_data}  \nmessage: {message_data}  \nstatus: {status_data}')
+                st.error(f'ticker: {ticker} start_time:{start_time} end_time:{end_time}  \nerror code: {code_data}  \nmessage: {message_data}  \nstatus: {status_data}')
             else:
                 message_data = json_object['message']
-                st.error(f'error code: {code_data}  \nmessage: {message_data}  \nstatus: {status_data}')
+                st.error(f'ticker: {ticker} start_time:{start_time} end_time:{end_time}  \nerror code: {code_data}  \nmessage: {message_data}  \nstatus: {status_data}')
                 
     elif (status_exist == False):
         msg = f'Status Key Does not exist!!!: Will attempt TS Data Extraction from odd json object  \nstatus_data not exist for ticker:{ticker}|interval {interval}|Start time: start_time|output size: {data_pts}'
