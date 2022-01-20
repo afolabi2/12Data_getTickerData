@@ -16,6 +16,8 @@ import getAnalytics as gAna
 # streamlit run ./files.py/streamlit-app.py
 
 #mitq and gree brtx gfai need testing
+#utme atvi working
+
 
 # ====================
 # WAITING TASKS
@@ -54,7 +56,7 @@ st.markdown(f""" <style>
     }} </style> """, unsafe_allow_html=True)
 
 # ====================
-# HELPER FUNCTIONS
+# HELPER MARKDOWN FUNCTIONS
 # ====================
 #<font color=‘red’>THIS TEXT WILL BE RED</font>, unsafe_allow_html=True)
 
@@ -75,6 +77,13 @@ def sideBarcolorHeader(fontcolor = '#33ff33', fontsze = 30, msg="Enter some Text
     st.sidebar.markdown(f'<h1 style="color:{fontcolor};font-size:{fontsze}px;">{msg}</h1>', unsafe_allow_html=True)
 
 # ====================
+# HELPER FUNCTIONS
+# ====================
+
+
+
+
+# ====================
 # PRINT OUT FUNCTIONS
 # ====================
 def filterPrint(symbol_select, type_select, country_select, exchange_select ):
@@ -83,18 +92,7 @@ def filterPrint(symbol_select, type_select, country_select, exchange_select ):
                                         type_select, country_select, exchange_select)  
     st.session_state.messages = []    
     st.session_state.df_filter = [] 
-    mess = f'Nos. of Tickers Processed with filter criteria: **{len(df_filter.index)}**'
-    st.session_state.messages.append(mess)
-    
-    mess = f'Ticker Symbol(s) Selected: **{symbol_select}**'
-    st.session_state.messages.append(mess)
-    mess = f'     Ticker Type Selected: **{type_select}**'
-    st.session_state.messages.append(mess)
-    mess = f'         Country Selected: **{country_select}**'
-    st.session_state.messages.append(mess)
-    mess = f'          Exchange Select: **{exchange_select}**'
-    st.session_state.messages.append(mess)            
-    
+   
     if len(symb_error_out_shre_lst) > 0:
         mess = f'data unavailable for {len(symb_error_out_shre_lst)} Nos. of Tickers'
         st.session_state.messages.append(mess)
@@ -133,26 +131,26 @@ def initialiseTickerLst(apikey_12Data):
     stocks_df = g12d.get_tck_stocks_df(apikey_12Data)
     return stocks_df
 
-demo_apikey_12Data = "7940a5c7698545e98f6617f235dd1d5d"
-apikey_12Data = "69287070d2f24f60a821b96ec1281011"
-stocks_df = initialiseTickerLst(apikey_12Data)
-total_rows_unfiltered_tickername_12Data = len(stocks_df)
-get12Data_expander = st.expander(f"12Data Tickerlist Dataframe containing Outstanding & Float Shares")
-with get12Data_expander:
-    msg = 'Tickers Available from 12Data'
-    colorHeader(fontcolor = '#800080', fontsze = 18, msg = msg)
-    st.markdown(f'total nos of tickers available: **{total_rows_unfiltered_tickername_12Data:,}**')
-
 if "messages" not in st.session_state:      
     st.session_state.messages = []    
 if "dataframe" not in st.session_state: 
     st.session_state.df_filter = []   
-if "toProcessInput" not in st.session_state: 
-    st.session_state.toProcessInput = [] 
-if "df_requests" not in st.session_state: 
-    st.session_state.df_requests = []  
+if "df_use12Data" not in st.session_state: 
+    st.session_state.df_use12Data = []  
 if "symb_lst" not in st.session_state: 
     st.session_state.symb_lst = []  
+
+
+if "df_12TSD" not in st.session_state: 
+    st.session_state.df_12TSD = []
+
+
+demo_apikey_12Data = "7940a5c7698545e98f6617f235dd1d5d"
+apikey_12Data = "69287070d2f24f60a821b96ec1281011"
+stocks_df = initialiseTickerLst(apikey_12Data)
+total_rows_unfiltered_tickername_12Data = len(stocks_df)
+
+
 # ====================
 # SIDE BAR AREA 
 # ====================
@@ -168,6 +166,10 @@ inst_radio = st.sidebar.radio("Please select an Instrument Type", inst_lst)
 st.sidebar.write(f"**{inst_radio} Data selected**")
 st.sidebar.markdown("---")
 
+#get12Data_expander messages
+msg_get12Data = ''     
+msg = f'total nos of tickers available:{total_rows_unfiltered_tickername_12Data:,}'
+msg_get12Data = msg_get12Data + msg + '<br/>'
 
 
 if inst_radio == "Stock Ticker":
@@ -215,26 +217,28 @@ if inst_radio == "Stock Ticker":
                     symbol_lst = legal_tcker
                     symbol_select = st.sidebar.multiselect('Symbol list from file will appear here', symbol_lst, symbol_lst )
 
+                #get12Data_expander messages  
                 if len(illegal_tcker) > 0:
-                    with get12Data_expander:
-                        st.markdown(f"Nos. of Illegal tickers: **{len(illegal_tcker)}**")
-                        st.markdown(f'Ticker List: **{illegal_tcker}**')
-                        st.markdown("---")
+                    msg = f'Nos. of Illegal tickers: {len(illegal_tcker)}'
+                    msg_get12Data = msg_get12Data + msg + '<br/>'
+                    msg = f'Ticker List: {illegal_tcker}'
+                    msg_get12Data = msg_get12Data + msg + '<br/>'
                 if len(legal_tcker) > 0:
-                    with get12Data_expander:
-                        st.markdown(f"Nos. of Legal tickers: **{len(legal_tcker)}**")
-                        st.markdown(f'Ticker List: **{legal_tcker}**')
-                        st.markdown("---") 
+                    msg = f'Nos. of legal tickers: {len(illegal_tcker)}'
+                    msg_get12Data = msg_get12Data + msg + '<br/>'
+                    msg = f'Ticker List: {legal_tcker}'
+                    msg_get12Data = msg_get12Data + msg + '<br/>'
 
         elif (tcker_select_type_radio == "Single or Multiple Ticker(s) Symbols"):
             symbol_lst = g12d.get_tcker_symbol_lst(stocks_df)
-            symbol_select = st.sidebar.multiselect('Type in the ticker symbol here', options = symbol_lst, default = ["AAPL", "TSLA"])  # DEFAULT FOR TESTING
+            symbol_select = st.sidebar.multiselect('Type in the ticker symbol here', options = symbol_lst, default = ["MITQ"])  # DEFAULT FOR TESTING
 
-            with get12Data_expander:
-                st.markdown(f"Nos. of Legal tickers: **{len(symbol_select)}**")
-                st.markdown(f'Ticker List: **{symbol_select}**')
-                st.markdown("---")
-        
+            #get12Data_expander messages  
+            msg = f"Nos. of Legal tickers: {len(symbol_select)}"
+            msg_get12Data = msg_get12Data + msg + '<br/>'
+            msg = f'Ticker List: **{symbol_select}'
+            msg_get12Data = msg_get12Data + msg + '<br/>'
+       
         st.sidebar.markdown("---")
         msg = 'FILTER SELECTION'
         sideBarcolorHeader(fontcolor = '#800080', fontsze = 14, msg = msg)
@@ -252,7 +256,7 @@ if inst_radio == "Stock Ticker":
         exchange_lst = g12d.get_tcker_exchange_lst(stocks_df)
         exchange_select = st.sidebar.multiselect('Type in the ticker exchange here',
                                                 options = exchange_lst,
-                                                default = ["NASDAQ"])
+                                                default = ["NASDAQ", "CBOE", "NYSE", "OTC"])
         
         
         
@@ -278,7 +282,7 @@ if inst_radio == "Stock Ticker":
         startTimeRangeOption = st.sidebar.selectbox('Please select type of Start Date', startTimeRngeTuple )
 
         if startTimeRangeOption in approvedDateInputType:
-            start_date_input = st.sidebar.date_input("Select Start Date", datetime.date(2019, 1, 13)) # FOR TESTING
+            start_date_input = st.sidebar.date_input("Select Start Date", datetime.date(2022, 1, 1)) # FOR TESTING
             #start_date_input = st.sidebar.date_input("Select Start Date", datetime.date.today())
             st.sidebar.write('Start Date is:', start_date_input)
         
@@ -328,6 +332,15 @@ if inst_radio == "Stock Ticker":
 # ====================
 # MAIN AREA 
 # ====================
+get12Data_expander = st.expander(f"12Data Tickerlist Dataframe containing Outstanding & Float Shares")
+with get12Data_expander:
+    msg = 'Tickers Available from 12Data'
+    colorHeader(fontcolor = '#800080', fontsze = 18, msg = msg)
+
+#get12Data_expander write messages
+with get12Data_expander:
+    colorHeader(fontcolor = '#00008B', fontsze = 12, msg = msg_get12Data)
+
 use12Data_expander = st.expander(f"12Data Input for Time Series Computations")
 
 if st.sidebar.button('Submit'):
@@ -337,12 +350,11 @@ if st.sidebar.button('Submit'):
     if len(symbol_select) == 0:
                 st.warning('Please populate ticker symbol')
     else:
-        st.session_state.toProcessInput = [] 
         st.session_state.symb_lst = []  
         st.session_state.symb_lst = symbol_select
 
         msg_all = ''
-        st.session_state.df_requests = []
+        st.session_state.df_use12Data = []
         for symbol in symbol_select:
             if startTimeRangeOption == 'earliestTimeStamp':
                 date_info = g12d.getTickerEarliesrTimeStamp(apikey_12Data, symbol)
@@ -370,32 +382,31 @@ if st.sidebar.button('Submit'):
             
             symb_startEnd_df,maxRequestPerDay_freekey = g12d.getStartStopRngeLst(symbol, interval, final_start_date, final_end_date) 
             nosOfLoopsPerSymb = len(symb_startEnd_df.index)
-            st.session_state.df_requests.append(symb_startEnd_df)
+            st.session_state.df_use12Data.append(symb_startEnd_df)
             
+            msg_use12Data = ''
             if nosOfLoopsPerSymb > maxRequestPerDay_freekey:
                 msg = f'{nosOfLoopsPerSymb} Required Time Series Requests exceeds Daily Free API Limit of {maxRequestPerDay_freekey} Requests for {symbol}'
-                msg_all = msg_all + msg + '<br/>'
+                msg_use12Data = msg_use12Data + msg + '<br/>'
             else:
                 msg = f'{nosOfLoopsPerSymb} Required Time Series Requests wont exceed Daily Free API Limit of {maxRequestPerDay_freekey} Requests for {symbol}'
-                msg_all = msg_all + msg + '<br/>'
+                msg_use12Data = msg_use12Data + msg + '<br/>'
             
-        allSymb_startEnd_lst = st.session_state.df_requests
+        allSymb_startEnd_lst = st.session_state.df_use12Data
         #get number of tickers to be used
         nosOfTickers = len(allSymb_startEnd_lst)
         msg = f'Nos of Ticker Symbol(s) to process: {nosOfTickers}' + '<br/>'
-        msg_all = msg + msg_all
-        st.session_state.toProcessInput.append(msg_all) 
+        msg_use12Data = msg_use12Data + msg_all
+
 
         # writing of data
         with use12Data_expander:
-            if len(st.session_state.toProcessInput) != 0:
-                mess = f'Ticker Dataframes for Start Stop Date Ranges'
-                colorHeader(fontcolor = '#800080', fontsze = 20, msg = mess)
-           
-            for msg in st.session_state.toProcessInput:
-                colorHeader(fontcolor = '#00008B', fontsze = 12, msg = msg)
+            mess = f'Ticker Dataframes for Start Stop Date Ranges'
+            colorHeader(fontcolor = '#800080', fontsze = 20, msg = mess)
+            colorHeader(fontcolor = '#00008B', fontsze = 12, msg = msg_use12Data)
+            
             cnt = 0
-            for dataframe in st.session_state.df_requests:
+            for dataframe in st.session_state.df_use12Data:
                 symbol = symbol_select[cnt]
                 st.write('*' * 60)
                 mess = f'{symbol} Requests Start Stop Date Range DataFrame'
@@ -407,8 +418,8 @@ if st.sidebar.button('Submit'):
         
         
 
-        get12Data_expander = st.expander(f"12Data Output for Time Series Computations")        
-        msg_all = ''
+        get12TSD_expander = st.expander(f"12Data Output for Time Series Computations")        
+        msg_get12TSD = ''
         cnt = 0
         for symbStartEnd in allSymb_startEnd_lst:
             curr_symb   = symbol_select[cnt]
@@ -418,47 +429,77 @@ if st.sidebar.button('Submit'):
             last_end    = symbStartEnd.end_time[lenOfDf - 1]
             
             msg = f'Time Series Data for {curr_symb} Will run {lenOfDf} Times from {first_start} to {last_end}'
-            msg_all = msg_all + msg + '<br/>'
+            msg_get12TSD = msg_get12TSD + msg + '<br/>'
             cnt += 1
-        msg = '*' * 60
-        msg_all = msg_all + msg + '<br/>'
         # writing of data
-        with get12Data_expander:
+        with get12TSD_expander:
             mess = f'Ticker Dataframes for Time Series Data'
             colorHeader(fontcolor = '#800080', fontsze = 20, msg = mess)
-            colorHeader(fontcolor = '#00008B', fontsze = 12, msg = msg_all)
+            colorHeader(fontcolor = '#00008B', fontsze = 12, msg = msg_get12TSD)
 
         symbol_startend_dict = {
         "symbol":symbol_select, "start_stop_data": allSymb_startEnd_lst}
        
 
         res_dct = g12d.getAllSymbolTimeSeries_dfs(apikey_12Data, symbol_startend_dict)
+        # add value df to session state
+        for key, value in res_dct.items():
+            st.session_state.df_12TSD.append(value.df_tsData)
 
-        with get12Data_expander:
+        with get12TSD_expander:
+            cnt = 0
             for key, value in res_dct.items():
-                msg_all = ''
                 total_data_pts = len(value.df_tsData.index)
+                msg_get12TSD = ''
                 msg = f'{value.ticker} Available Time Series Dataframe between {value.start_date} and {value.end_date}'
-                msg_all = msg_all + msg + '<br/>'
+                msg_get12TSD = msg_get12TSD + msg + '<br/>'
                 msg = f'Max Nos of DataPoints:{value.outputsize}'
-                msg_all = msg_all + msg + '<br/>'
+                msg_get12TSD = msg_get12TSD + msg + '<br/>'
                 msg = f'Total DataPoints:{total_data_pts}'
-                msg_all = msg_all + msg + '<br/>'
-                colorHeader(fontcolor = '#00008B', fontsze = 12, msg = msg_all)
-                st.dataframe(value.df_tsData)
+                msg_get12TSD = msg_get12TSD + msg + '<br/>'
+                colorHeader(fontcolor = '#00008B', fontsze = 12, msg = msg_get12TSD)
+                
+                st.dataframe(st.session_state.df_12TSD[cnt])
+                cnt += 1
+
+                    
+        
+        
         getAnalytics_expander = st.expander(f"Analytics for Time Series Computations")
-        
-        
         with getAnalytics_expander:
             mess = f'Ticker Dataframes for Analytics'
             colorHeader(fontcolor = '#800080', fontsze = 20, msg = mess)
             for key, value in res_dct.items():
                 trans_df = gAna.analytics(value.df_tsData)
-                msg_all = ''
+                msg_getANN = ''
                 msg = f'Data Analytic Dataframe for :{value.ticker}'
-                msg_all = msg_all + msg + '<br/>'
-                colorHeader(fontcolor = '#00008B', fontsze = 12, msg = msg_all)
+                msg_getANN = msg_getANN + msg + '<br/>'
+                colorHeader(fontcolor = '#00008B', fontsze = 12, msg = msg_getANN)
                 st.dataframe(trans_df)
+
+                Rnge_df = gAna.df_filter_Range(trans_df)
+                if len(Rnge_df.index) > 0:
+                    msg_getANN = ''
+                    msg = "*" * 60
+                    msg_getANN = msg_getANN + msg + '<br/>'
+                    msg = f'Range Dataframe for :{value.ticker}'
+                    msg_getANN = msg_getANN + msg + '<br/>'
+                    colorHeader(fontcolor = '#00008B', fontsze = 12, msg = msg_getANN)
+                    st.dataframe(Rnge_df)
+
+                minVal = -9.4
+                maxVal = -1.0
+                Voltle_df = gAna.df_filter_Volatile(trans_df, minVal, maxVal)
+                if len(Voltle_df.index) > 0:
+                    msg_getANN = ''
+                    msg = "*" * 60
+                    msg_getANN = msg_getANN + msg + '<br/>'
+                    msg = f'Volatile Dataframe for :{value.ticker}'
+                    msg_getANN = msg_getANN + msg + '<br/>'
+                    msg = f'Volatile column values range between {minVal} - {maxVal}'
+                    msg_getANN = msg_getANN + msg + '<br/>'
+                    colorHeader(fontcolor = '#00008B', fontsze = 12, msg = msg_getANN)
+                    st.dataframe(Voltle_df)
 
 
             

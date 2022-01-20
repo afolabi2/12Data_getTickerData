@@ -1,54 +1,38 @@
-import requests
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
-
-import json
-import pandas as pd
-import numpy as np
-import pathlib
 import streamlit as st
-import getYfData as yfd
-from time import sleep
-import time
-from datetime import datetime
-from datetime import timedelta
-from dateutil.relativedelta import relativedelta, MO
-import math
+import pandas as pd
+import datetime
+from io import StringIO 
 
 from dataclasses import dataclass
 from dataclasses import field
 from dataclasses import InitVar
 
 import get12Data as g12d
-from time import sleep
-import streamlit as st
+import getAnalytics as gAna
+# ====================
+# RUN APP!!!!!
+# ====================
 # to run streamlit app
-# streamlit run ./files.py/testing2.py
+# streamlit run ./files.py/old_testing2.py
 
+# ---- Modules ------- 
+import plotly.express as px
 
-demo_apikey_12Data = "7940a5c7698545e98f6617f235dd1d5d"
-twelvedata_api_key: str = "69287070d2f24f60a821b96ec1281011"
-msg_all = ''
-symbol = 'AAPL'
-start = '2022-01-10 09:00:00'
-end = '2022-01-13 12:00:00'
-interval = '2h'
-
-
-twelvedata_url = f'https://api.twelvedata.com/time_series?&symbol={symbol}&start_date={start}&end_date={end}&interval={interval}&apikey={twelvedata_api_key}'
-
-
-session = requests.Session()
-# In case I run into issues, retry my connection
-retries = Retry(total=5, backoff_factor=0.1,
-                status_forcelist=[500, 502, 503, 504])
-session.mount('http://', HTTPAdapter(max_retries=retries))
-# Initial request to get the ticker count
-r = session.get(twelvedata_url)
-json_object = r.json()
-#st.write(json_object)
-value_data = json_object['values']
-print('')
-df = pd.DataFrame(value_data)
-print(df.head(5))
-print(df.tail(5))
+st.header("Fruits List")
+# ---- Creating Dictionary ----
+_dic = { 'Name': ['Mango', 'Apple', 'Banana'],
+         'Quantity': [45, 38, 90]}
+load = st.button('Load Data')
+if load:
+    _df = pd.DataFrame(_dic)
+    st.write(_df)
+   
+   # ---- Plot types -------
+    opt = st.radio('Plot type :',['Bar', 'Pie'])
+    if opt == 'Bar':
+        fig = px.bar(_df, x= 'Name', y = 'Quantity',title ='Bar Chart')
+        st.plotly_chart(fig)
+   
+    else:     
+      fig = px.pie(_df,names = 'Name', values = 'Quantity',title ='Pie Chart')
+      st.plotly_chart(fig)

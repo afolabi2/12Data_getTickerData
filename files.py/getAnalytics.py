@@ -173,8 +173,8 @@ def addVolatile(df):
             "221.92-216",
             "1.18-1.34"
             ]
-
-    df['Range'] = np.select(conditions, Value)
+    # numpy.select(condlist, choicelist, default=0)
+    df['Range'] = np.select(conditions, Value, default = 0)
     
     df10 = df.loc[(df['volatile']==122400.93)|
                     (df['volatile']==13269.48)|
@@ -247,4 +247,14 @@ def addVolatile(df):
     return df
     
 
-    
+def df_filter_Range(df):
+    new_df = df.loc[df['Range'] != "0"].sort_values(by='datetime',ascending=False)
+    return new_df
+
+#np.where(condition, choice if condition is met, choice if condition is not met)
+#returns an array explained above
+#df["Code"]= np.where(df["Total Time"]<6.00,1,df["Code"])
+
+def df_filter_Volatile(df, minVal, maxVal):
+    new_df = df.loc[lambda x: x.volatile >= minVal].loc[lambda x: x.volatile <= maxVal]
+    return new_df
