@@ -258,3 +258,11 @@ def df_filter_Range(df):
 def df_filter_Volatile(df, minVal, maxVal):
     new_df = df.loc[lambda x: x.volatile >= minVal].loc[lambda x: x.volatile <= maxVal]
     return new_df
+
+def df_getMinMaxVal_Volatile(df):
+    minVal = df.volatile.min()
+    maxVal = df.volatile.max()
+    minVal = float(minVal)
+    maxVal = float(maxVal)
+    new_df = df.loc[lambda x: x.volatile >= minVal].loc[lambda x: x.volatile <= maxVal]
+    return minVal, maxVal
