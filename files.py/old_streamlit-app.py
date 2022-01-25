@@ -13,7 +13,7 @@ import getAnalytics as gAna
 # RUN APP!!!!!
 # ====================
 # to run streamlit app
-# streamlit run ./files.py/streamlit-app.py
+# streamlit run ./files.py/old_streamlit-app.py
 
 #mitq and gree brtx gfai need testing
 #utme atvi working
@@ -396,7 +396,7 @@ if st.sidebar.button('Submit'):
         #get number of tickers to be used
         nosOfTickers = len(allSymb_startEnd_lst)
         msg = f'Nos of Ticker Symbol(s) to process: {nosOfTickers}' + '<br/>'
-        msg_use12Data = msg_use12Data + msg_all
+        msg_use12Data = msg_use12Data + msg
 
 
         # writing of data

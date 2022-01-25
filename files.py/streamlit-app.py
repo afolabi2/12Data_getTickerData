@@ -14,6 +14,7 @@ import guiMarkDown as guiMrk #used for markdown and write functions
 
 # gui
 import guiSidebar as guiSide
+import guiMainArea as guiMain
 
 # programmatic calculations
 import get12Data as g12d
@@ -72,45 +73,11 @@ def initPageSettings():
 # ====================
 # PRINT OUT FUNCTIONS
 # ====================
-def filterPrint(symbol_select, type_select, country_select, exchange_select ):
-    #need to add hard limits to qty of tickers and date ranges here
-    df_filter, symb_error_out_shre_lst, symb_error_flt_shre_lst = g12d.filter_tcker(apikey_12Data, stocks_df, symbol_select, 
-                                        type_select, country_select, exchange_select)  
-    st.session_state.messages = []    
-    st.session_state.df_filter = [] 
-   
-    if len(symb_error_out_shre_lst) > 0:
-        mess = f'data unavailable for {len(symb_error_out_shre_lst)} Nos. of Tickers'
-        st.session_state.messages.append(mess)
-        mess = symb_error_out_shre_lst
-        st.session_state.messages.append(mess)
-    if len(symb_error_flt_shre_lst) > 0:
-        mess = f'data unavailable for {len(symb_error_flt_shre_lst)} Nos. of Tickers'
-        st.session_state.messages.append(mess)
-        mess = symb_error_flt_shre_lst
-        st.session_state.messages.append(mess)
-    st.session_state.df_filter.append(df_filter)
-
-    with get12Data_expander:
-        for msg in st.session_state.messages:
-            st.markdown(msg)
-        if "dataframe" in st.session_state: 
-            msg = 'DataFrame for Filtered Ticker List'
-            guiMrk.colorHeader(fontcolor = '#800080', fontsze = 18, msg = msg)
-        for dataframe in st.session_state.df_filter:
-            st.dataframe(dataframe)
-    
-    return df_filter, symb_error_out_shre_lst, symb_error_flt_shre_lst
-
 def setDfFormat():
     # ====================
     # DATAFRAME FORMATTING 
     # ====================
     pd.options.display.float_format = '{:,}'.format
-
-
-
-
 
 # get dataframe of lists of Stock Dataframe
 @st.cache
@@ -149,17 +116,26 @@ def getPaidApiKey():
 def initSessionStates():
     if "df_stock" not in st.session_state:      
         st.session_state.df_stock = pd.DataFrame()  
+    if "Data12_PaidKey" not in st.session_state:      
+        st.session_state.Data12_PaidKey = '' 
+    if "Data12_DemoKey" not in st.session_state:      
+        st.session_state.Data12_DemoKey = ''
     
-    if "messages" not in st.session_state:      
-        st.session_state.messages = []    
-    if "dataframe" not in st.session_state: 
-        st.session_state.df_filter = []   
-    if "df_use12Data" not in st.session_state: 
-        st.session_state.df_use12Data = []  
-    if "symb_lst" not in st.session_state: 
-        st.session_state.symb_lst = []  
-    if "df_12TSD" not in st.session_state: 
-        st.session_state.df_12TSD = []
+    #if "messages" not in st.session_state:      
+    #    st.session_state.messages = []    
+    #if "dataframe" not in st.session_state: 
+    #    st.session_state.df_filter = []   
+    #if "df_use12Data" not in st.session_state: 
+    #    st.session_state.df_use12Data = []  
+    #if "symb_lst" not in st.session_state: 
+    #    st.session_state.symb_lst = []  
+    #if "df_12TSD" not in st.session_state: 
+    #    st.session_state.df_12TSD = []
+
+def initSessionApiKeys(Data12_PaidKey,Data12_DemoKey):
+    st.session_state.Data12_PaidKey = Data12_PaidKey
+    st.session_state.Data12_DemoKey = Data12_DemoKey
+
 
 def initStockDf(Data12_PaidKey):
     st.session_state.df_stock = initTickerLst(Data12_PaidKey)
@@ -178,12 +154,18 @@ def initAllSettings():
     Data12_DemoKey = getDemoApiKey()
     Data12_PaidKey = getPaidApiKey()
     
-    initStockDf(Data12_PaidKey)
+    initSessionApiKeys(Data12_PaidKey,Data12_DemoKey)
+    initStockDf(st.session_state.Data12_PaidKey)
 
 def showGui():
     initAllSettings()
-  
+    
     guiSide.sideGui()
+
+    guiMain.get12main()
+    guiMain.use12main()
+    guiMain.get12TSDmain()
+    guiMain.get12Analytics()
 
 if __name__ == "__main__":
    showGui()

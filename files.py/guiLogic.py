@@ -25,3 +25,5 @@ def getEndTimeRngeTuple(startTimeRangeOption):
     elif startTimeRangeOption == "Today's Date":
         EndTimeRngeTuple = ("Time Interval",  "Today's Date")
     return EndTimeRngeTuple
+
+
