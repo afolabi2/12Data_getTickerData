@@ -1,7 +1,11 @@
 import streamlit as st
+import pandas as pd
 
 # programmatic calculations
 import get12Data as g12d
+import getAnalytics as gAna
+
+
 
 
 # gui helper functions
@@ -9,10 +13,24 @@ import guiMarkDown as guiMrk #used for markdown and write functions
 import guiLogic as guiLgc #used for function calls outside of
 
 def initSessionStates():
+    if "trans_df" not in st.session_state: 
+        st.session_state.trans_df = pd.DataFrame() 
+    if "Rnge_df" not in st.session_state: 
+        st.session_state.Rnge_df = pd.DataFrame() 
+    if "Voltle_df" not in st.session_state: 
+        st.session_state.Voltle_df = pd.DataFrame() 
+
+
+
     if "df_filter" not in st.session_state: 
         st.session_state.df_filter = [] 
     if "df_use12Data" not in st.session_state: 
         st.session_state.df_use12Data = [] 
+    if "df_12TSD" not in st.session_state: 
+        st.session_state.df_12TSD = [] 
+    if "res_dct" not in st.session_state: 
+        st.session_state.res_dct = [] 
+    
 
 
     if "msg_get12Data" not in st.session_state: 
@@ -36,7 +54,6 @@ def initSessionStates():
         st.session_state.get12TSD_expander = st.delta_generator.DeltaGenerator  
     if "getAnalytics_expander" not in st.session_state: 
         st.session_state.getAnalytics_expander = st.delta_generator.DeltaGenerator  
-
 
 def filterPrint():
     df_filter, symb_error_out_shre_lst, symb_error_flt_shre_lst = g12d.filter_tcker(st.session_state.Data12_PaidKey, 
@@ -186,76 +203,95 @@ def get12TSDmain():
             lenOfDf = len(symbStartEnd.index)
             first_start = symbStartEnd.start_time[0]
             last_end    = symbStartEnd.end_time[lenOfDf - 1]
-
             msg = f'Time Series Data for {curr_symb} Will run {lenOfDf} Times from {first_start} to {last_end}'
             msg_get12TSD = msg_get12TSD + msg + '<br/>'
             cnt += 1
-
-        # writing of data
-        with st.session_state.get12TSD_expander:
-            mess = f'Ticker Dataframes for Time Series Data'
-            colorHeader(fontcolor = '#800080', fontsze = 20, msg = mess)
-            colorHeader(fontcolor = '#00008B', fontsze = 12, msg = msg_get12TSD)
+        msg_get12TSD = msg_get12TSD +'<br/>'
+        
         symbol_startend_dict = {
         "symbol":symbol_select, "start_stop_data": allSymb_startEnd_lst}
 
-        res_dct = g12d.getAllSymbolTimeSeries_dfs(apikey_12Data, symbol_startend_dict)
+        res_dct = g12d.getAllSymbolTimeSeries_dfs(st.session_state.Data12_PaidKey, symbol_startend_dict)
+        st.session_state.res_dct = res_dct
+        #st.write(f'fire on the mountain')
+        #st.write(res_dct)
+        
         # add value df to session state
-        for key, value in res_dct.items():
+        st.session_state.df_12TSD = []
+        for key, value in st.session_state.res_dct.items():
             st.session_state.df_12TSD.append(value.df_tsData)
-        with st.session_state.get12TSD_expander:
-            cnt = 0
-            for key, value in res_dct.items():
-                total_data_pts = len(value.df_tsData.index)
-                msg_get12TSD = ''
-                msg = f'{value.ticker} Available Time Series Dataframe between {value.start_date} and {value.end_date}'
-                msg_get12TSD = msg_get12TSD + msg + '<br/>'
-                msg = f'Max Nos of DataPoints:{value.outputsize}'
-                msg_get12TSD = msg_get12TSD + msg + '<br/>'
-                msg = f'Total DataPoints:{total_data_pts}'
-                msg_get12TSD = msg_get12TSD + msg + '<br/>'
-                colorHeader(fontcolor = '#00008B', fontsze = 12, msg = msg_get12TSD)
+     
+        #msg_get12TSD = ''
+        for key, value in st.session_state.res_dct.items():
+            total_data_pts = len(value.df_tsData.index)
+            msg = f'{value.ticker} Available Time Series Dataframe between {value.start_date} and {value.end_date}'
+            msg_get12TSD = msg_get12TSD + msg + '<br/>'
+        msg_get12TSD = msg_get12TSD +'<br/>'    
 
-                st.dataframe(st.session_state.df_12TSD[cnt])
-                cnt += 1
+        for key, value in st.session_state.res_dct.items():    
+            msg = f'{value.ticker} has Max Nos of DataPoints:{value.outputsize}'
+            msg_get12TSD = msg_get12TSD + msg + '<br/>'
+            msg = f'{value.ticker} has Total DataPoints:{total_data_pts}'
+            msg_get12TSD = msg_get12TSD + msg + '<br/>'
+
+        # writing of data
+        cnt = 0
+        st.session_state.msg_get12TSD = msg_get12TSD
+        with st.session_state.get12TSD_expander:
+            mess = f'Ticker Dataframes for Time Series Data'
+            guiMrk.colorHeader(fontcolor = '#800080', fontsze = 20, msg = mess)            
+            guiMrk.colorHeader(fontcolor = '#00008B', fontsze = 12, msg = st.session_state.msg_get12TSD)
+
+            st.dataframe(st.session_state.df_12TSD[cnt])
+            cnt += 1
 
 def get12Analytics():   
     if st.session_state.button_submit:
         st.session_state.getAnalytics_expander = st.expander(f"Analytics for Time Series Computations")
+        
         with st.session_state.getAnalytics_expander:
             mess = f'Ticker Dataframes for Analytics'
-            colorHeader(fontcolor = '#800080', fontsze = 20, msg = mess)
-            for key, value in res_dct.items():
-                trans_df = gAna.analytics(value.df_tsData)
+            guiMrk.colorHeader(fontcolor = '#800080', fontsze = 20, msg = mess)
+            cnt1 = 0
+            for key, value in st.session_state.res_dct.items():
+                st.session_state.trans_df = gAna.analytics(value.df_tsData)
                 msg_getANN = ''
                 msg = f'Data Analytic Dataframe for :{value.ticker}'
                 msg_getANN = msg_getANN + msg + '<br/>'
-                colorHeader(fontcolor = '#00008B', fontsze = 12, msg = msg_getANN)
-                st.dataframe(trans_df)
-                Rnge_df = gAna.df_filter_Range(trans_df)
-                if len(Rnge_df.index) > 0:
+                guiMrk.colorHeader(fontcolor = '#00008B', fontsze = 12, msg = msg_getANN)
+                st.dataframe(st.session_state.trans_df)
+                
+                
+                st.session_state.Rnge_df = gAna.df_filter_Range(st.session_state.trans_df)
+                if len(st.session_state.Rnge_df.index) > 0:
                     msg_getANN = ''
-                    msg = "*" * 60
-                    msg_getANN = msg_getANN + msg + '<br/>'
                     msg = f'Range Dataframe for :{value.ticker}'
                     msg_getANN = msg_getANN + msg + '<br/>'
-                    colorHeader(fontcolor = '#00008B', fontsze = 12, msg = msg_getANN)
-                    st.dataframe(Rnge_df)
+                    guiMrk.colorHeader(fontcolor = '#00008B', fontsze = 12, msg = msg_getANN)
+                    st.dataframe(st.session_state.Rnge_df)
+                else:
+                    msg_getANN = ''
+                    msg = f'No Range Dataframe for :{value.ticker}'
+                    msg_getANN = msg_getANN + msg + '<br/>'
+                    guiMrk.colorHeader(fontcolor = '#00008B', fontsze = 12, msg = msg_getANN)
+                
+                
                 # get min and max value range to use as range filters for dataframe volatile column data
                 st.markdown('---')
-                minVal, maxVal = gAna.df_getMinMaxVal_Volatile(trans_df)
+                minVal, maxVal = gAna.df_getMinMaxVal_Volatile(st.session_state.trans_df)
                 st.write(f'min value: {minVal} <br/> max value {maxVal}')
                 volatile_slide = st.slider('Min and Max Volatile Column Range?', value = [minVal, maxVal])
-                
-                
-                Voltle_df = gAna.df_filter_Volatile(trans_df, minVal, maxVal)
-                if len(Voltle_df.index) > 0:
-                    msg_getANN = ''
-                    msg = "*" * 60
-                    msg_getANN = msg_getANN + msg + '<br/>'
-                    msg = f'Volatile Dataframe for :{value.ticker}'
-                    msg_getANN = msg_getANN + msg + '<br/>'
-                    msg = f'Volatile column values range between {minVal} - {maxVal}'
-                    msg_getANN = msg_getANN + msg + '<br/>'
-                    colorHeader(fontcolor = '#00008B', fontsze = 12, msg = msg_getANN)
-                    st.dataframe(Voltle_df)
+                cnt1 += 1
+
+
+                #st.session_state.Voltle_df = gAna.df_filter_Volatile(st.session_state.trans_df, minVal, maxVal)
+                #if len(st.session_state.Voltle_df.index) > 0:
+                #    msg_getANN = ''
+                #    msg = "*" * 60
+                #    msg_getANN = msg_getANN + msg + '<br/>'
+                #    msg = f'Volatile Dataframe for :{value.ticker}'
+                #    msg_getANN = msg_getANN + msg + '<br/>'
+                #    msg = f'Volatile column values range between {minVal} - {maxVal}'
+                #    msg_getANN = msg_getANN + msg + '<br/>'
+                #    guiMrk.colorHeader(fontcolor = '#00008B', fontsze = 12, msg = msg_getANN)
+                #    st.dataframe(st.session_state.Voltle_df)

@@ -1,4 +1,5 @@
 import streamlit as st
+import pandas as pd
 import datetime
 
 # gui helper functions
@@ -7,6 +8,7 @@ import guiLogic as guiLgc #used for function calls outside of
 
 # programmatic calculations
 import get12Data as g12d
+import getAnalytics as gAna
 
 
 def initSessionStates():

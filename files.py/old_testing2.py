@@ -1,38 +1,28 @@
+# streamlit run ./files.py/old_testing2.py
 import streamlit as st
 import pandas as pd
-import datetime
-from io import StringIO 
+import numpy as np
 
-from dataclasses import dataclass
-from dataclasses import field
-from dataclasses import InitVar
+np.random.seed(0)  # Seed so random arrays do not change on each rerun
+n_rows = 1000
+random_data = pd.DataFrame(
+    {"A": np.random.random(size=n_rows), "B": np.random.random(size=n_rows)})
 
-import get12Data as g12d
-import getAnalytics as gAna
-# ====================
-# RUN APP!!!!!
-# ====================
-# to run streamlit app
-# streamlit run ./files.py/old_testing2.py
+sliders = {
+    "A": st.sidebar.slider(
+        "Filter A", min_value=0.0, max_value=1.0, value=(0.0, 1.0), step=0.01    ),
+    "B": st.sidebar.slider(
+        "Filter B", min_value=0.0, max_value=1.0, value=(0.0, 1.0), step=0.01    ),
+}
 
-# ---- Modules ------- 
-import plotly.express as px
+filter = np.full(n_rows, True)  # Initialize filter as only True
 
-st.header("Fruits List")
-# ---- Creating Dictionary ----
-_dic = { 'Name': ['Mango', 'Apple', 'Banana'],
-         'Quantity': [45, 38, 90]}
-load = st.button('Load Data')
-if load:
-    _df = pd.DataFrame(_dic)
-    st.write(_df)
-   
-   # ---- Plot types -------
-    opt = st.radio('Plot type :',['Bar', 'Pie'])
-    if opt == 'Bar':
-        fig = px.bar(_df, x= 'Name', y = 'Quantity',title ='Bar Chart')
-        st.plotly_chart(fig)
-   
-    else:     
-      fig = px.pie(_df,names = 'Name', values = 'Quantity',title ='Pie Chart')
-      st.plotly_chart(fig)
+for feature_name, slider in sliders.items():
+    # Here we update the filter to take into account the value of each slider
+    filter = (
+        filter
+        & (random_data[feature_name] >= slider[0])
+        & (random_data[feature_name] <= slider[1])
+    )
+
+st.write(random_data[filter])
