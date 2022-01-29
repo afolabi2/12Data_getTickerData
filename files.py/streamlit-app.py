@@ -114,6 +114,8 @@ def getPaidApiKey():
         getPaidApiKey()
     
 def initSessionStates():
+    if "reruns" not in st.session_state: 
+        st.session_state.reruns = 0
     if "df_stock" not in st.session_state:      
         st.session_state.df_stock = pd.DataFrame()  
     if "Data12_PaidKey" not in st.session_state:      
@@ -131,6 +133,15 @@ def initSessionStates():
     #    st.session_state.symb_lst = []  
     #if "df_12TSD" not in st.session_state: 
     #    st.session_state.df_12TSD = []
+
+def printRerunsVal():
+   st.session_state.reruns += 1
+   reruns = st.session_state.reruns
+   printReruns = f'program has ran {reruns} times'
+   print("&" * 60)
+   print(printReruns)
+   print("&" * 60)
+   #st.write(printReruns)
 
 def initSessionApiKeys(Data12_PaidKey,Data12_DemoKey):
     st.session_state.Data12_PaidKey = Data12_PaidKey
@@ -159,13 +170,9 @@ def initAllSettings():
 
 def showGui():
     initAllSettings()
-    
     #create side-bar gui
+    printRerunsVal()
     guiSide.sideGui()
-
-    #perfom program logic
-    mlg.mainLogic()
-
     #create main area gui
     mlg.guiLoad()
        

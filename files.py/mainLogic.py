@@ -34,9 +34,9 @@ def initSessionStates():
 
     # session objects of dict type
     if "sess02_dict" not in st.session_state:
-        st.session_state.sess02_dict = []
+        st.session_state.sess02_dict = {}
     if "res_dct" not in st.session_state: 
-        st.session_state.res_dct = []      
+        st.session_state.res_dct = {}      
 
     # session objects of expander type
     if "gui01_expander" not in st.session_state: 
@@ -110,27 +110,39 @@ def getSessDict_gui02():
         
         sess02_dict = dict()
         sess02_dict["Symbol"]           = st.session_state.symbol_select
-        sess02_dict["Start Date"]       = lst_fin_start_dte
-        sess02_dict["End Date"]         = lst_fin_end_dte
-        sess02_dict["Max FreeKey Req"]  = lst_maxReqDly_freekey
-        sess02_dict["Nos of Loops"]     = lst_nosOfLoopsPerSymb
+        sess02_dict["Start_Date"]       = lst_fin_start_dte
+        sess02_dict["End_Date"]         = lst_fin_end_dte
+        sess02_dict["Max_FreeKey_Req"]  = lst_maxReqDly_freekey
+        sess02_dict["LoopsNos"]     = lst_nosOfLoopsPerSymb
         sess02_dict["df_gui02"]         = st.session_state.lst_df_gui02
+        
+        #print(f'st.session_state.symbol_select: {st.session_state.symbol_select}')
+        #print(f'lst_fin_start_dte: {lst_fin_start_dte}')
+        #print(f'lst_fin_end_dte: {lst_fin_end_dte}')
+        #print(f'lst_maxReqDly_freekey: {lst_maxReqDly_freekey}')
+        #print(f'lst_nosOfLoopsPerSymb: {lst_nosOfLoopsPerSymb}')
+        #print(f'len(st.session_state.lst_df_gui02): {len(st.session_state.lst_df_gui02)}')
         
         return sess02_dict
         
-
 def printGui01(lst_Err_OutShr, lst_Err_FltShr ):
     msg_get12Data = ''
     if len(lst_Err_OutShr) > 0:
         msg = f'outstanding shares data unavailable for {len(lst_Err_OutShr)} Nos. of Tickers'
         msg_get12Data = msg_get12Data + msg + '<br/>'
-        msg = lst_Err_OutShr
-        msg_get12Data = msg_get12Data + msg + '<br/>'
+        if len(lst_Err_OutShr) > 0:
+            msg = ''
+            for err in lst_Err_OutShr:
+                msg = msg + err + '<br/>'
+            msg_get12Data = msg_get12Data + msg + '<br/>'
     if len(lst_Err_FltShr) > 0:
         msg = f'floating shares data unavailable for {len(lst_Err_FltShr)} Nos. of Tickers'
         msg_get12Data = msg_get12Data + msg + '<br/>'
-        msg = lst_Err_FltShr
-        msg_get12Data = msg_get12Data + msg + '<br/>'
+        if len(lst_Err_FltShr) > 0:
+            msg = ''
+            for err in lst_Err_FltShr:
+                msg = msg + err + '<br/>'
+            msg_get12Data = msg_get12Data + msg + '<br/>'
     msg = f"Nos. of Legal tickers: {len(st.session_state.symbol_select)}"
     msg_get12Data = msg_get12Data + msg + '<br/>'
     msg = f'Ticker List: **{st.session_state.symbol_select}'
@@ -148,10 +160,10 @@ def printGui01(lst_Err_OutShr, lst_Err_FltShr ):
 
 def printGui02():
     sess02_dict = st.session_state.sess02_dict
-    symbol_select = sess02_dict["Symbol"] # could usest.session_state.symbol_select instead
-    lst_nosOfLoopsPerSymb = sess02_dict["Nos of Loops"]
-    lst_maxReqDly_freekey = sess02_dict["Max FreeKey Req"]  
-    allSymb_startEnd_lst  = sess02_dict["df_gui02"] 
+    symbol_select = sess02_dict.get("Symbol") # could use st.session_state.symbol_select instead
+    lst_nosOfLoopsPerSymb = sess02_dict.get("LoopsNos")
+    lst_maxReqDly_freekey = sess02_dict.get("Max_FreeKey_Req") 
+    allSymb_startEnd_lst  = sess02_dict.get("df_gui02")
     
     if len(symbol_select) == 0:
                 st.warning('Please populate ticker symbol')
@@ -181,57 +193,41 @@ def printGui02():
 # MAIN LOGIC CALCULATIONS
 # ====================        
 def mainLogic():
-    if st.session_state.button_submit:
-        initSessionStates()
+    #computations for Gui01 here
+    df_filter, lst_Err_OutShr, lst_Err_FltShr = setFilterResult()
+    st.session_state.df_filter = pd.DataFrame()
+    st.session_state.lst_Err_OutShr = []
+    st.session_state.lst_Err_FltShr = []
+    st.session_state.df_filter = df_filter
+    st.session_state.lst_Err_OutShr = lst_Err_OutShr
+    st.session_state.lst_Err_FltShr = lst_Err_FltShr
         
-        #computations for Gui01 here
-        df_filter, lst_Err_OutShr, lst_Err_FltShr = setFilterResult()
-        st.session_state.df_filter = pd.DataFrame()
-        st.session_state.lst_Err_OutShr = []
-        st.session_state.lst_Err_FltShr = []
-        st.session_state.df_filter = df_filter
-        st.session_state.lst_Err_OutShr = lst_Err_OutShr
-        st.session_state.lst_Err_FltShr = lst_Err_FltShr
+    #computations for Gui02 here
+    sess02_dict = getSessDict_gui02()
+    st.session_state.sess02_dict = sess02_dict
         
-        #computations for Gui02 here
-        sess02_dict = getSessDict_gui02()
-        st.session_state.sess02_dict = sess02_dict
-        
-        allSymb_startEnd_lst = st.session_state.lst_df_gui02
-        symbol_select = st.session_state.symbol_select
-        symbol_startend_dict = {"symbol":symbol_select, "start_stop_data": allSymb_startEnd_lst}
-        res_dct = g12d.getAllSymbolTimeSeries_dfs(st.session_state.Data12_PaidKey, symbol_startend_dict)
-        st.session_state.res_dct = res_dct
-        # add value df to session state
-        st.session_state.lst_df_gui03 = []
-        st.session_state.lst_df_trans = []
-        st.session_state.lst_df_Rnge  = []
-        st.session_state.lst_df_Voltle  = []
-        for key, value in st.session_state.res_dct.items():
-            st.session_state.lst_df_gui03.append(value.df_tsData)
-            df_trans = gAna.analytics(value.df_tsData)
-            st.session_state.lst_df_trans.append(df_trans)
-            st.session_state.lst_df_Rnge.append(gAna.df_filter_Range(df_trans))
-
-        
+    allSymb_startEnd_lst = st.session_state.lst_df_gui02
+    symbol_select = st.session_state.symbol_select
+    symbol_startend_dict = {"symbol":symbol_select, "start_stop_data": allSymb_startEnd_lst}
+    res_dct = g12d.getAllSymbolTimeSeries_dfs(st.session_state.Data12_PaidKey, symbol_startend_dict)
+    st.session_state.res_dct = res_dct
+    # add value df to session state
+    st.session_state.lst_df_gui03 = []
+    st.session_state.lst_df_trans = []
+    st.session_state.lst_df_Rnge  = []
+    st.session_state.lst_df_Voltle  = []
+    for key, value in st.session_state.res_dct.items():
+        st.session_state.lst_df_gui03.append(value.df_tsData)
+        df_trans = gAna.analytics(value.df_tsData)
+        st.session_state.lst_df_trans.append(df_trans)
+        st.session_state.lst_df_Rnge.append(gAna.df_filter_Range(df_trans))
     mess = f"We are done.....Success!!!!<br/>see results below"
     guiMrk.colorHeader(fontcolor = '#800080', fontsze = 15, msg = mess) 
     #we need to create a testing of expected values to confirm proper success
 # ====================
 # MAIN AREA GUI'S
 # ====================
-def guiLoad():
-    #create main area gui
-    gui01()
-    gui02()
-    gui03()
-    gui04()
-
-
 def gui01():
-    #initialize session states to be used
-    initSessionStates()
-    
     st.session_state.gui01_expander = st.expander(f"12Data Tickerlist Dataframe containing Outstanding & Float Shares")
     st.sidebar.markdown("---")
     
@@ -240,7 +236,6 @@ def gui01():
     printGui01(lst_Err_OutShr, lst_Err_FltShr )
 
 def gui02():
-    initSessionStates()
     st.session_state.gui02_expander = st.expander(f"12Data Input for Time Series Computations")            
     msg_gui02 = printGui02()
     # writing of data    
@@ -309,7 +304,7 @@ def gui04():
                         guiMrk.colorHeader(fontcolor = '#008000', fontsze = 18, msg = entry)
                     with col2:
                         volatile_slide = st.slider('Min and Max Volatile Column Range?', value = [RangeMin, RangeMax])
-                    submit_button = st.form_submit_button(label='Submit')
+                    submit_button = minMaxform.form_submit_button(label='Submit')
                     
                 if submit_button:
                     minVal = volatile_slide[0]
@@ -335,7 +330,7 @@ def gui04():
                    
                     with placeholder.container():
                         guiMrk.colorHeader(fontcolor = '#FF0000', fontsze = 14, msg = msg_gui04)
-                        st.dataframe(st.session_state.Voltle_df)
+                        st.dataframe(df_Voltle)
                 else:
                     with placeholder.container():
                         msg_gui04 = ''
@@ -344,7 +339,7 @@ def gui04():
                         msg = f'No Filters applied'
                         msg_gui04 = msg_gui04 + msg + '<br/>'
                         guiMrk.colorHeader(fontcolor = '#00008B', fontsze = 12, msg = msg_gui04)
-                        st.dataframe(st.session_state.trans_df)
+                        st.dataframe(df_trans)
                     
                 df_Rnge = st.session_state.lst_df_Rnge[cnt]
                 if len(df_Rnge.index) > 0:
@@ -371,7 +366,14 @@ def gui04():
             st.markdown('---')
             cnt += 1
 
-                
+def guiLoad():
+    initSessionStates()
+    if st.session_state.button_submit or (st.session_state.reruns>0):
+        mainLogic()#create main area gui
+        gui01()
+        gui02()
+        gui03()
+        gui04()                
             
             
             
