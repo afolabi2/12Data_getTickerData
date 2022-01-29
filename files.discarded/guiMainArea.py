@@ -20,8 +20,6 @@ def initSessionStates():
     if "Voltle_df" not in st.session_state: 
         st.session_state.Voltle_df = pd.DataFrame() 
 
-
-
     if "df_filter" not in st.session_state: 
         st.session_state.df_filter = [] 
     if "df_use12Data" not in st.session_state: 
@@ -30,8 +28,6 @@ def initSessionStates():
         st.session_state.df_12TSD = [] 
     if "res_dct" not in st.session_state: 
         st.session_state.res_dct = [] 
-    
-
 
     if "msg_get12Data" not in st.session_state: 
         st.session_state.msg_get12Data = ''  
@@ -41,10 +37,6 @@ def initSessionStates():
         st.session_state.msg_get12TSD = '' 
     if "msg_getANN" not in st.session_state: 
         st.session_state.msg_getANN = ''
-
-
-
-
 
     if "get12Data_expander" not in st.session_state: 
         st.session_state.get12Data_expander = st.delta_generator.DeltaGenerator  

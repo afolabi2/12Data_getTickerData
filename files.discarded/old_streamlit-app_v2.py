@@ -14,9 +14,9 @@ import guiMarkDown as guiMrk #used for markdown and write functions
 
 # gui
 import guiSidebar as guiSide
+import guiMainArea as guiMain
 
-# programmatic 
-import mainLogic as mlg
+# programmatic calculations
 import get12Data as g12d
 import getAnalytics as gAna
 
@@ -160,15 +160,12 @@ def initAllSettings():
 def showGui():
     initAllSettings()
     
-    #create side-bar gui
     guiSide.sideGui()
 
-    #perfom program logic
-    mlg.mainLogic()
-
-    #create main area gui
-    mlg.guiLoad()
-       
+    guiMain.get12main()
+    guiMain.use12main()
+    guiMain.get12TSDmain()
+    guiMain.get12Analytics()
 
 if __name__ == "__main__":
    showGui()
